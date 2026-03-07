@@ -1,65 +1,61 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useChat } from '@ai-sdk/react';
+
+export default function LegalChat() {
+  // Usamos 'as any' para evitar que o TS trave a renderização por erro de tipagem
+  const { messages, input, handleInputChange, handleSubmit, status } = useChat() as any;
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+    <div className="flex flex-col h-screen bg-gray-100 text-slate-900">
+      {/* Header Simples sem ícones por enquanto */}
+      <header className="p-4 bg-white border-b shadow-sm">
+        <h1 className="text-xl font-bold text-blue-700">Página Protótipo SaaS</h1>
+      </header>
+
+      {/* Área de Mensagens */}
+      <main className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.length === 0 && (
+          <p className="text-center text-gray-500 mt-10">Digite algo para iniciar a análise jurídica...</p>
+        )}
+
+        {messages.map((m: any) => (
+          <div key={m.id} className={`p-4 rounded-lg max-w-[80%] ${
+            m.role === 'user' 
+              ? 'bg-blue-600 text-white ml-auto' 
+              : 'bg-white border text-slate-800 shadow-sm'
+          }`}>
+            <p className="font-bold text-xs mb-1">{m.role === 'user' ? 'Advogado' : 'DeepSeek-R1'}</p>
+            <div className="text-sm whitespace-pre-wrap">{m.content}</div>
+          </div>
+        ))}
+
+        {/* Indicador de Status */}
+        {(status === 'submitted' || status === 'streaming') && (
+          <div className="text-blue-600 text-xs italic animate-pulse">
+            DeepSeek está processando...
+          </div>
+        )}
       </main>
+
+      {/* Footer / Input */}
+      <footer className="p-4 bg-white border-t">
+        <form onSubmit={handleSubmit} className="flex gap-2 max-w-4xl mx-auto">
+          <input
+            className="flex-1 p-2 border rounded-md outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            value={input}
+            placeholder="Analise o artigo 5º..."
+            onChange={handleInputChange}
+          />
+          <button 
+            type="submit" 
+            className="px-4 py-2 bg-blue-600 text-white rounded-md disabled:bg-gray-400"
+            disabled={status !== 'idle' || !input}
+          >
+            Enviar
+          </button>
+        </form>
+      </footer>
     </div>
   );
 }
