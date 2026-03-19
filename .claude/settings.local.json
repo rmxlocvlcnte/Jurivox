@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(where node:*)",
+      "Read(//usr/local/**)",
+      "Read(//c/Program Files/**)",
+      "Read(//c/Users/ricarte/AppData/Roaming/**)",
+      "Read(//c/Users/ricarte/AppData/Local/**)",
+      "Bash(cmd /c \"where pnpm 2>nul\")",
+      "Bash(cmd /c \"where npm 2>nul\")",
+      "Bash(cmd /c \"where node 2>nul\")",
+      "Bash(powershell -Command \"Get-Command pnpm,npm,node -ErrorAction SilentlyContinue | Select-Object Name,Source\")",
+      "Bash(powershell -Command \"node --version; pnpm --version\")"
+    ]
+  }
+}
