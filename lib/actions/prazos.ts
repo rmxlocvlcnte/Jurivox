@@ -10,6 +10,8 @@
 import { getAuthContext } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import { emailNovoPrazo } from '@/lib/notificacoes/email'
+import { whatsappNovoPrazo } from '@/lib/notificacoes/whatsapp'
 
 // Calcula data de vencimento somando dias a partir da data início
 // Se dias_uteis = true, conta apenas dias de semana (seg-sex)
@@ -76,6 +78,47 @@ export async function criarPrazo(formData: FormData) {
   if (error) {
     console.error('Erro ao criar prazo:', error)
     return { erro: 'Não foi possível criar o prazo.' }
+  }
+
+  // Busca advogado responsável para notificação
+  const { data: membro } = await supabase
+    .from('membros_escritorio')
+    .select('nome, email, telefone')
+    .eq('escritorio_id', escritorioId)
+    .single()
+
+  const { data: processoData } = await supabase
+    .from('processos')
+    .select('numero_cnj')
+    .eq('id', processoId)
+    .single()
+
+  if (membro && processoData) {
+    const hoje = new Date()
+    const venc = new Date(dataVencimento + 'T12:00:00')
+    const diasRestantes = Math.ceil((venc.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24))
+
+    if (membro.email) {
+      emailNovoPrazo({
+        emailAdvogado: membro.email,
+        nomeAdvogado: membro.nome,
+        numeroCnj: processoData.numero_cnj,
+        descricao,
+        dataVencimento,
+        diasRestantes,
+      }).catch(() => {})
+    }
+
+    if (membro.telefone) {
+      whatsappNovoPrazo({
+        telefoneAdvogado: membro.telefone,
+        nomeAdvogado: membro.nome,
+        numeroCnj: processoData.numero_cnj,
+        descricao,
+        dataVencimento,
+        diasRestantes,
+      }).catch(() => {})
+    }
   }
 
   revalidatePath('/prazos')

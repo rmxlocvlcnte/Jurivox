@@ -8,6 +8,8 @@
 import { getAuthContext } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import { emailNovaMovimentacao } from '@/lib/notificacoes/email'
+import { whatsappNovaMovimentacao } from '@/lib/notificacoes/whatsapp'
 
 // ---- CRIAR PROCESSO ----
 export async function criarProcesso(formData: FormData) {
@@ -141,6 +143,44 @@ export async function adicionarMovimentacao(processoId: string, formData: FormDa
   if (error) {
     console.error('Erro ao adicionar movimentação:', error)
     return { erro: 'Não foi possível adicionar a movimentação.' }
+  }
+
+  // Busca dados do cliente e escritório para notificação
+  const { data: processoCompleto } = await supabase
+    .from('processos')
+    .select(`
+      numero_cnj,
+      escritorios (nome),
+      clientes (nome, email, telefone)
+    `)
+    .eq('id', processoId)
+    .single()
+
+  if (processoCompleto) {
+    const escritorio = processoCompleto.escritorios as { nome: string } | null
+    const cliente = processoCompleto.clientes as { nome: string; email: string | null; telefone: string | null } | null
+
+    // Envia notificações em paralelo (sem bloquear o redirect)
+    if (cliente?.email) {
+      emailNovaMovimentacao({
+        emailCliente: cliente.email,
+        nomeCliente: cliente.nome,
+        nomeEscritorio: escritorio?.nome ?? 'Escritório',
+        numeroCnj: processoCompleto.numero_cnj,
+        descricao,
+        tipo,
+      }).catch(() => {})
+    }
+
+    if (cliente?.telefone) {
+      whatsappNovaMovimentacao({
+        telefoneCliente: cliente.telefone,
+        nomeCliente: cliente.nome,
+        numeroCnj: processoCompleto.numero_cnj,
+        descricao,
+        nomeEscritorio: escritorio?.nome ?? 'Escritório',
+      }).catch(() => {})
+    }
   }
 
   revalidatePath(`/processos/${processoId}`)

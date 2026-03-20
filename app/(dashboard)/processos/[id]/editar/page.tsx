@@ -16,7 +16,7 @@ export default async function EditarProcessoPage({
 }) {
   const { id } = await params
   const { escritorioId, supabase } = await getAuthContext()
-  if (!escritorioId || !supabase) redirect('/sign-in')
+  if (!escritorioId || !supabase) redirect('/onboarding')
 
   const [{ data: processo }, { data: clientes }] = await Promise.all([
     supabase

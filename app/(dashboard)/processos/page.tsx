@@ -24,7 +24,7 @@ const LABEL_AREA: Record<string, string> = {
 
 export default async function ProcessosPage() {
   const { escritorioId, supabase } = await getAuthContext()
-  if (!escritorioId || !supabase) redirect('/sign-in')
+  if (!escritorioId || !supabase) redirect('/onboarding')
 
   const { data: processos } = await supabase
     .from('processos')

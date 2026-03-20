@@ -10,7 +10,7 @@
 // -----------------------------------------------
 
 import { auth } from '@clerk/nextjs/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 
@@ -38,7 +38,7 @@ export async function criarEscritorio(
     return { erro: 'Banco de dados não configurado. Preencha as variáveis do Supabase no arquivo .env.local.' }
   }
 
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   // Passo 1: Cria o escritório (o "tenant" do sistema)
   const { data: escritorio, error: erroEscritorio } = await supabase

@@ -19,7 +19,7 @@ export default async function BuscaPage({
 }) {
   const { q: query } = await searchParams
   const { escritorioId, supabase } = await getAuthContext()
-  if (!escritorioId || !supabase) redirect('/sign-in')
+  if (!escritorioId || !supabase) redirect('/onboarding')
 
   const termo = query?.trim() ?? ''
 

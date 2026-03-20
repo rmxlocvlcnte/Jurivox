@@ -42,7 +42,7 @@ function textoBadge(dias: number, concluido: boolean) {
 
 export default async function PrazosPage() {
   const { escritorioId, supabase } = await getAuthContext()
-  if (!escritorioId || !supabase) redirect('/sign-in')
+  if (!escritorioId || !supabase) redirect('/onboarding')
 
   const { data: prazos } = await supabase
     .from('prazos')

@@ -1,5 +1,6 @@
 import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 // -----------------------------------------------
 // getAuthContext
@@ -25,14 +26,16 @@ export async function getAuthContext() {
     return { userId: null, escritorioId: null, membroId: null, cargo: null, supabase: null }
   }
 
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   // Busca o registro do membro no banco usando o ID do Clerk
   const { data: membro } = await supabase
     .from('membros_escritorio')
     .select('id, escritorio_id, cargo')
     .eq('clerk_user_id', userId)
-    .single()
+    .order('criado_em', { ascending: false })
+    .limit(1)
+    .maybeSingle()
 
   return {
     userId,
@@ -46,15 +49,27 @@ export async function getAuthContext() {
 // Versão simples — só userId e escritorioId, sem instanciar o Supabase
 // Útil quando você só precisa checar se o usuário tem escritório
 export async function getEscritorioId(): Promise<string | null> {
-  const { userId } = await auth()
-  if (!userId) return null
+  try {
+    const { userId } = await auth()
+    if (!userId) return null
 
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from('membros_escritorio')
-    .select('escritorio_id')
-    .eq('clerk_user_id', userId)
-    .single()
+    const supabase = createAdminClient()
+    const { data, error } = await supabase
+      .from('membros_escritorio')
+      .select('escritorio_id')
+      .eq('clerk_user_id', userId)
+      .order('criado_em', { ascending: false })
+      .limit(1)
+      .maybeSingle()
 
-  return data?.escritorio_id ?? null
+    if (error) {
+      console.error('getEscritorioId error:', error.message)
+      return null
+    }
+
+    return data?.escritorio_id ?? null
+  } catch (e) {
+    console.error('getEscritorioId exception:', e)
+    return null
+  }
 }

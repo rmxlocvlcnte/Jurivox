@@ -9,7 +9,7 @@ import { Users, Plus, ChevronRight, Phone, Mail } from 'lucide-react'
 
 export default async function ClientesPage() {
   const { escritorioId, supabase } = await getAuthContext()
-  if (!escritorioId || !supabase) redirect('/sign-in')
+  if (!escritorioId || !supabase) redirect('/onboarding')
 
   const { data: clientes } = await supabase
     .from('clientes')

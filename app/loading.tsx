@@ -1,4 +1,4 @@
-export default function Loading() {
+export default function RootLoading() {
   return (
     <div
       style={{

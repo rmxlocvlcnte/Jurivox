@@ -50,7 +50,7 @@ function formatarData(data: string) {
 
 export default async function DashboardPage() {
   const { escritorioId, supabase } = await getAuthContext()
-  if (!escritorioId || !supabase) redirect('/sign-in')
+  if (!escritorioId || !supabase) redirect('/onboarding')
 
   const hoje = new Date().toISOString().split('T')[0]
   const em7Dias = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]

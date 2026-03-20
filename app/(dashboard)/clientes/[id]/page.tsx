@@ -6,6 +6,7 @@ import { getAuthContext } from '@/lib/auth'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { adicionarObservacao } from '@/lib/actions/clientes'
+import { UploadDocumento } from '@/components/upload-documento'
 import {
   ChevronLeft, Pencil, Phone, Mail, MapPin,
   User, FileText, FolderOpen,
@@ -22,9 +23,9 @@ export default async function ClienteDetalhePage({
 }) {
   const { id } = await params
   const { escritorioId, supabase } = await getAuthContext()
-  if (!escritorioId || !supabase) redirect('/sign-in')
+  if (!escritorioId || !supabase) redirect('/onboarding')
 
-  const [{ data: cliente }, { data: processos }] = await Promise.all([
+  const [{ data: cliente }, { data: processos }, { data: documentos }] = await Promise.all([
     supabase
       .from('clientes')
       .select('*')
@@ -37,6 +38,12 @@ export default async function ClienteDetalhePage({
       .select('id, numero_cnj, tribunal, area_juridica, status')
       .eq('cliente_id', id)
       .eq('escritorio_id', escritorioId)
+      .order('criado_em', { ascending: false }),
+
+    supabase
+      .from('documentos_cliente')
+      .select('id, tipo, nome_arquivo, url_arquivo, criado_em')
+      .eq('cliente_id', id)
       .order('criado_em', { ascending: false }),
   ])
 
@@ -167,6 +174,12 @@ export default async function ClienteDetalhePage({
               )}
             </div>
           </div>
+          {/* Documentos */}
+          <UploadDocumento
+            clienteId={id}
+            escritorioId={escritorioId}
+            documentos={documentos ?? []}
+          />
         </div>
 
         {/* Coluna direita: processos */}

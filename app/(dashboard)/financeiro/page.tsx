@@ -29,7 +29,7 @@ const CATEGORIAS_SAIDA = ['Custas judiciais', 'Cópias', 'Diligências', 'Salár
 
 export default async function FinanceiroPage() {
   const { escritorioId, supabase } = await getAuthContext()
-  if (!escritorioId || !supabase) redirect('/sign-in')
+  if (!escritorioId || !supabase) redirect('/onboarding')
 
   // Busca movimentações financeiras e honorários em paralelo
   const [

@@ -15,7 +15,7 @@ import ProcessoForm from '@/components/processos/ProcessoForm'
 
 export default async function NovoProcessoPage() {
   const { escritorioId, supabase } = await getAuthContext()
-  if (!escritorioId || !supabase) redirect('/sign-in')
+  if (!escritorioId || !supabase) redirect('/onboarding')
 
   // Busca clientes para o campo de seleção
   const { data: clientes } = await supabase

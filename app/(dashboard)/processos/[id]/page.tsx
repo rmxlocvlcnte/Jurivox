@@ -53,7 +53,7 @@ export default async function ProcessoDetalhePage({
 }) {
   const { id } = await params
   const { escritorioId, supabase } = await getAuthContext()
-  if (!escritorioId || !supabase) redirect('/sign-in')
+  if (!escritorioId || !supabase) redirect('/onboarding')
 
   // Busca o processo com dados do cliente e responsável
   const { data: processo } = await supabase
