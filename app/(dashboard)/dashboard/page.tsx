@@ -114,19 +114,21 @@ export default async function DashboardPage() {
   ]
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between">
+    <div className="space-y-5 max-w-7xl mx-auto">
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
-          <p className="text-slate-500 text-sm mt-1">
+          <h1 className="text-xl md:text-2xl font-bold text-slate-900">Dashboard</h1>
+          <p className="text-slate-500 text-xs md:text-sm mt-1 capitalize">
             {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
         </div>
         <Link
           href="/processos/novo"
-          className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-4 py-2 rounded-lg transition-colors text-sm"
+          className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-3 md:px-4 py-2 rounded-lg transition-colors text-sm shrink-0"
         >
-          <Plus className="w-4 h-4" /> Novo Processo
+          <Plus className="w-4 h-4" />
+          <span className="hidden sm:inline">Novo Processo</span>
+          <span className="sm:hidden">Novo</span>
         </Link>
       </div>
 
