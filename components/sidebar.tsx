@@ -13,15 +13,32 @@ import {
   Bot,
   Scale,
   X,
+  Clock,
+  FileText,
+  CreditCard,
+  UserCheck,
+  Radio,
 } from 'lucide-react'
 
 const navItems = [
-  { href: '/dashboard',  label: 'Dashboard',     icon: LayoutDashboard },
-  { href: '/processos',  label: 'Processos',     icon: FolderOpen },
-  { href: '/clientes',   label: 'Clientes',      icon: Users },
-  { href: '/prazos',     label: 'Prazos',        icon: Calendar },
-  { href: '/financeiro', label: 'Financeiro',    icon: DollarSign },
-  { href: '/ia',         label: 'Assistente IA', icon: Bot },
+  { href: '/dashboard',        label: 'Dashboard',        icon: LayoutDashboard },
+  { href: '/processos',        label: 'Processos',        icon: FolderOpen },
+  { href: '/clientes',         label: 'Clientes',         icon: Users },
+  { href: '/prazos',           label: 'Prazos',           icon: Calendar },
+  { href: '/agenda',           label: 'Agenda',           icon: Calendar },
+  { href: '/contratos',        label: 'Contratos',        icon: FileText },
+  { href: '/timesheet',        label: 'Timesheet',        icon: Clock },
+  { href: '/financeiro',       label: 'Financeiro',       icon: DollarSign },
+  { href: '/contas-receber',   label: 'Contas a Receber', icon: CreditCard },
+  { href: '/equipe',           label: 'Equipe',           icon: UserCheck },
+  { href: '/ia',               label: 'Assistente IA',    icon: Bot },
+  { href: '/monitoramento',    label: 'Monitoramento',    icon: Radio },
+]
+
+const GRUPOS = [
+  { label: 'Principal', items: ['/dashboard', '/processos', '/clientes', '/prazos', '/agenda'] },
+  { label: 'Gestão', items: ['/contratos', '/timesheet', '/financeiro', '/contas-receber', '/equipe'] },
+  { label: 'IA & Automação', items: ['/ia', '/monitoramento'] },
 ]
 
 export function Sidebar() {
@@ -41,11 +58,8 @@ export function Sidebar() {
       <aside
         className={cn(
           'flex flex-col w-64 shrink-0 transition-transform duration-300 ease-in-out',
-          // Mobile: posição fixa, fora da tela por padrão
           'fixed inset-y-0 left-0 z-50',
-          // Desktop: volta ao fluxo normal, sempre visível
           'lg:static lg:inset-auto lg:z-auto lg:translate-x-0 lg:self-stretch',
-          // Mobile aberto/fechado
           open ? 'translate-x-0' : '-translate-x-full',
         )}
         style={{
@@ -71,7 +85,6 @@ export function Sidebar() {
             <span className="text-lg font-bold tracking-tight text-gradient">JurisFlow</span>
           </div>
 
-          {/* Botão fechar — só aparece no mobile */}
           <button
             onClick={() => setOpen(false)}
             className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
@@ -82,29 +95,41 @@ export function Sidebar() {
         </div>
 
         {/* Navegação */}
-        <nav className="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
-          {navItems.map(({ href, label, icon: Icon }) => {
-            const isActive = pathname === href || pathname.startsWith(href + '/')
+        <nav className="flex-1 px-3 py-4 overflow-y-auto">
+          {GRUPOS.map(grupo => {
+            const grupoItems = navItems.filter(item => grupo.items.includes(item.href))
             return (
-              <Link
-                key={href}
-                href={href}
-                onClick={() => setOpen(false)}
-                className={cn(
-                  'relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
-                  isActive ? 'text-slate-900' : 'text-slate-400 hover:text-white hover:bg-white/5',
-                )}
-                style={isActive ? {
-                  background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-                  boxShadow: '0 4px 15px rgba(245, 158, 11, 0.3)',
-                } : undefined}
-              >
-                <Icon className={cn(
-                  'w-4 h-4 shrink-0 transition-colors',
-                  isActive ? 'text-slate-900' : 'text-slate-500',
-                )} />
-                {label}
-              </Link>
+              <div key={grupo.label} className="mb-4">
+                <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider px-3 mb-1.5">
+                  {grupo.label}
+                </p>
+                <div className="space-y-0.5">
+                  {grupoItems.map(({ href, label, icon: Icon }) => {
+                    const isActive = pathname === href || pathname.startsWith(href + '/')
+                    return (
+                      <Link
+                        key={href}
+                        href={href}
+                        onClick={() => setOpen(false)}
+                        className={cn(
+                          'relative flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200',
+                          isActive ? 'text-slate-900' : 'text-slate-400 hover:text-white hover:bg-white/5',
+                        )}
+                        style={isActive ? {
+                          background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                          boxShadow: '0 4px 15px rgba(245, 158, 11, 0.3)',
+                        } : undefined}
+                      >
+                        <Icon className={cn(
+                          'w-4 h-4 shrink-0 transition-colors',
+                          isActive ? 'text-slate-900' : 'text-slate-500',
+                        )} />
+                        {label}
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
             )
           })}
         </nav>
@@ -115,7 +140,7 @@ export function Sidebar() {
             <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <p className="text-xs text-slate-400">Sistema online</p>
           </div>
-          <p className="text-xs text-slate-600">JurisFlow v0.1</p>
+          <p className="text-xs text-slate-600">JurisFlow v0.2</p>
         </div>
       </aside>
     </>
