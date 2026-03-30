@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { useSidebar } from './sidebar-context'
 import {
@@ -44,6 +45,12 @@ const GRUPOS = [
 export function Sidebar() {
   const pathname = usePathname()
   const { open, setOpen } = useSidebar()
+  const [logoAnimating, setLogoAnimating] = useState(false)
+
+  function handleLogoClick() {
+    setLogoAnimating(true)
+    setTimeout(() => setLogoAnimating(false), 600)
+  }
 
   return (
     <>
@@ -70,20 +77,42 @@ export function Sidebar() {
         {/* Logo */}
         <div
           className="flex items-center justify-between gap-3 px-6 py-5"
-          style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+          style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}
         >
-          <div className="flex items-center gap-3">
+          <button
+            onClick={handleLogoClick}
+            className="flex items-center gap-3 group"
+            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+          >
             <div
-              className="flex items-center justify-center w-9 h-9 rounded-xl shrink-0"
+              className={cn(
+                'flex items-center justify-center w-9 h-9 rounded-xl shrink-0 transition-all duration-300',
+                logoAnimating
+                  ? 'scale-125 rotate-[360deg]'
+                  : 'scale-100 rotate-0 group-hover:scale-110',
+              )}
               style={{
                 background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-                boxShadow: '0 4px 12px rgba(245,158,11,0.35)',
+                boxShadow: logoAnimating
+                  ? '0 0 24px 6px rgba(245,158,11,0.7)'
+                  : '0 4px 12px rgba(245,158,11,0.35)',
+                transition: 'transform 0.5s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease',
               }}
             >
               <Scale className="w-5 h-5 text-white" />
             </div>
-            <span className="text-lg font-bold tracking-tight text-gradient">JurisFlow</span>
-          </div>
+            <span
+              className="text-lg font-bold tracking-tight"
+              style={{
+                background: 'linear-gradient(90deg, #ffffff 0%, #f59e0b 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >
+              JurisFlow
+            </span>
+          </button>
 
           <button
             onClick={() => setOpen(false)}
@@ -99,8 +128,12 @@ export function Sidebar() {
           {GRUPOS.map(grupo => {
             const grupoItems = navItems.filter(item => grupo.items.includes(item.href))
             return (
-              <div key={grupo.label} className="mb-4">
-                <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider px-3 mb-1.5">
+              <div key={grupo.label} className="mb-5">
+                {/* Label do grupo com mais destaque */}
+                <p
+                  className="text-xs font-bold uppercase tracking-widest px-3 mb-2"
+                  style={{ color: 'rgba(245, 158, 11, 0.5)' }}
+                >
                   {grupo.label}
                 </p>
                 <div className="space-y-0.5">
@@ -112,8 +145,10 @@ export function Sidebar() {
                         href={href}
                         onClick={() => setOpen(false)}
                         className={cn(
-                          'relative flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200',
-                          isActive ? 'text-slate-900' : 'text-slate-400 hover:text-white hover:bg-white/5',
+                          'relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200',
+                          isActive
+                            ? 'text-slate-900'
+                            : 'text-slate-300 hover:text-white hover:bg-white/8',
                         )}
                         style={isActive ? {
                           background: 'linear-gradient(135deg, #f59e0b, #d97706)',
@@ -122,7 +157,7 @@ export function Sidebar() {
                       >
                         <Icon className={cn(
                           'w-4 h-4 shrink-0 transition-colors',
-                          isActive ? 'text-slate-900' : 'text-slate-500',
+                          isActive ? 'text-slate-900' : 'text-slate-400',
                         )} />
                         {label}
                       </Link>
