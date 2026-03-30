@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+
 import { cn } from '@/lib/utils'
 import { useSidebar } from './sidebar-context'
 import {
@@ -45,14 +45,8 @@ const GRUPOS = [
 export function Sidebar() {
   const pathname = usePathname()
   const { open, setOpen } = useSidebar()
-  const [logoAnimating, setLogoAnimating] = useState(false)
-
-  function handleLogoClick() {
-    setLogoAnimating(true)
-    setTimeout(() => setLogoAnimating(false), 600)
-  }
-
   return (
+
     <>
       {/* Overlay escuro para mobile */}
       {open && (
@@ -79,40 +73,20 @@ export function Sidebar() {
           className="flex items-center justify-between gap-3 px-6 py-5"
           style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}
         >
-          <button
-            onClick={handleLogoClick}
-            className="flex items-center gap-3 group"
-            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
-          >
+          <div className="flex items-center gap-3">
             <div
-              className={cn(
-                'flex items-center justify-center w-9 h-9 rounded-xl shrink-0 transition-all duration-300',
-                logoAnimating
-                  ? 'scale-125 rotate-[360deg]'
-                  : 'scale-100 rotate-0 group-hover:scale-110',
-              )}
+              className="flex items-center justify-center w-9 h-9 rounded-xl shrink-0"
               style={{
                 background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-                boxShadow: logoAnimating
-                  ? '0 0 24px 6px rgba(245,158,11,0.7)'
-                  : '0 4px 12px rgba(245,158,11,0.35)',
-                transition: 'transform 0.5s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease',
+                boxShadow: '0 4px 12px rgba(245,158,11,0.35)',
               }}
             >
               <Scale className="w-5 h-5 text-white" />
             </div>
-            <span
-              className="text-lg font-bold tracking-tight"
-              style={{
-                background: 'linear-gradient(90deg, #ffffff 0%, #f59e0b 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}
-            >
+            <span className="text-lg font-bold tracking-tight text-white">
               JurisFlow
             </span>
-          </button>
+          </div>
 
           <button
             onClick={() => setOpen(false)}
