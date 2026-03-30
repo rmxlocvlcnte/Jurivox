@@ -83,7 +83,7 @@ export function Sidebar() {
             >
               <Scale className="w-5 h-5 text-white" />
             </div>
-            <span className="text-lg font-bold tracking-tight text-white">
+            <span className="text-lg font-bold tracking-tight text-amber-400">
               JurisFlow
             </span>
           </div>
