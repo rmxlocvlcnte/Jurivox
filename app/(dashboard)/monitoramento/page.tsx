@@ -1,6 +1,6 @@
 import { getAuthContext } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import { Bot, Radio, Search, Bell, Zap, AlertCircle, ExternalLink } from 'lucide-react'
+import { Bot, Radio, Search, Bell, Zap, AlertCircle, ExternalLink, Scale } from 'lucide-react'
 
 export default async function MonitoramentoPage() {
   const { escritorioId, supabase } = await getAuthContext()
@@ -14,12 +14,12 @@ export default async function MonitoramentoPage() {
     .order('numero_cnj')
 
   const tribunaisSuportados = [
-    { nome: 'TJSP', status: 'em breve', url: 'https://www.tjsp.jus.br' },
-    { nome: 'TJRJ', status: 'em breve', url: 'https://www.tjrj.jus.br' },
-    { nome: 'TRT-2', status: 'em breve', url: 'https://www.trt2.jus.br' },
-    { nome: 'TRF-3', status: 'em breve', url: 'https://www.trf3.jus.br' },
-    { nome: 'STJ', status: 'em breve', url: 'https://www.stj.jus.br' },
-    { nome: 'DataJud / CNJ', status: 'em breve', url: 'https://datajud.cnj.jus.br' },
+    { nome: 'TJSP', status: 'em breve' },
+    { nome: 'TJRJ', status: 'em breve' },
+    { nome: 'TRT-2', status: 'em breve' },
+    { nome: 'TRF-3', status: 'em breve' },
+    { nome: 'STJ', status: 'em breve' },
+    { nome: 'DataJud / CNJ', status: 'em breve' },
   ]
 
   return (
@@ -111,9 +111,7 @@ export default async function MonitoramentoPage() {
                 <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
                   <Scale className="w-4 h-4 text-slate-500" />
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">{t.nome}</p>
-                </div>
+                <p className="text-sm font-semibold text-slate-900">{t.nome}</p>
               </div>
               <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-700">
                 Em breve
@@ -143,13 +141,5 @@ export default async function MonitoramentoPage() {
         </div>
       </div>
     </div>
-  )
-}
-
-function Scale({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 6l9-3 9 3M12 3v18M5 8l-2 8h4l-2-8zm14 0l-2 8h4l-2-8z" />
-    </svg>
   )
 }

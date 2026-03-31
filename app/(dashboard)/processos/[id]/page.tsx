@@ -10,10 +10,11 @@ import { getAuthContext } from '@/lib/auth'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { adicionarMovimentacao } from '@/lib/actions/processos'
+import { adicionarDocumentoProcesso, excluirDocumentoProcesso } from '@/lib/actions/documentos_processo'
 import {
   ChevronLeft, Pencil, Calendar, Clock,
   CheckCircle, Circle, FileText, Scale,
-  AlertTriangle, MapPin, Gavel,
+  AlertTriangle, MapPin, Gavel, Paperclip, Trash2, ExternalLink,
 } from 'lucide-react'
 
 const LABEL_AREA: Record<string, string> = {
@@ -69,8 +70,8 @@ export default async function ProcessoDetalhePage({
 
   if (!processo) notFound()
 
-  // Busca movimentações e prazos em paralelo
-  const [{ data: movimentacoes }, { data: prazos }] = await Promise.all([
+  // Busca movimentações, prazos e documentos em paralelo
+  const [{ data: movimentacoes }, { data: prazos }, { data: documentos }] = await Promise.all([
     supabase
       .from('movimentacoes')
       .select('*')
@@ -82,15 +83,31 @@ export default async function ProcessoDetalhePage({
       .select('*')
       .eq('processo_id', id)
       .order('data_vencimento', { ascending: true }),
+
+    supabase
+      .from('documentos_processo')
+      .select('*')
+      .eq('processo_id', id)
+      .order('criado_em', { ascending: false }),
   ])
 
   const cliente = processo.clientes as any
   const responsavel = processo.membros_escritorio as any
 
-  // Server Action para adicionar movimentação neste processo
   async function adicionarMovimentacaoNeste(formData: FormData) {
     'use server'
     await adicionarMovimentacao(id, formData)
+  }
+
+  async function adicionarDocumento(formData: FormData) {
+    'use server'
+    await adicionarDocumentoProcesso(id, formData)
+  }
+
+  async function excluirDoc(formData: FormData) {
+    'use server'
+    const docId = formData.get('doc_id') as string
+    await excluirDocumentoProcesso(docId, id)
   }
 
   return (
@@ -344,6 +361,81 @@ export default async function ProcessoDetalhePage({
                     </div>
                   )
                 })
+              )}
+            </div>
+          </div>
+
+          {/* Documentos do processo */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <h3 className="font-semibold text-slate-900 flex items-center gap-2">
+                <Paperclip className="w-4 h-4 text-slate-400" /> Documentos
+              </h3>
+              <span className="text-xs text-slate-400">{documentos?.length ?? 0}</span>
+            </div>
+
+            {/* Formulário de novo documento */}
+            <div className="px-4 py-3 bg-slate-50 border-b border-slate-100">
+              <form action={adicionarDocumento} className="space-y-2">
+                <input
+                  name="nome"
+                  type="text"
+                  required
+                  placeholder="Nome do documento"
+                  className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400"
+                />
+                <div className="flex gap-2">
+                  <select
+                    name="tipo"
+                    className="flex-1 px-2 py-1.5 text-xs border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+                  >
+                    <option value="peticao">Petição</option>
+                    <option value="procuracao">Procuração</option>
+                    <option value="contrato">Contrato</option>
+                    <option value="sentenca">Sentença</option>
+                    <option value="decisao">Decisão</option>
+                    <option value="outro">Outro</option>
+                  </select>
+                  <button type="submit" className="px-3 py-1.5 text-xs font-semibold bg-amber-500 hover:bg-amber-600 text-slate-900 rounded-lg transition-colors whitespace-nowrap">
+                    + Add
+                  </button>
+                </div>
+                <input
+                  name="url"
+                  type="url"
+                  required
+                  placeholder="URL do arquivo (Google Drive, etc.)"
+                  className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400"
+                />
+              </form>
+            </div>
+
+            {/* Lista de documentos */}
+            <div className="divide-y divide-slate-100">
+              {!documentos?.length ? (
+                <p className="px-5 py-4 text-xs text-slate-400 text-center">Nenhum documento anexado.</p>
+              ) : (
+                documentos.map((d) => (
+                  <div key={d.id} className="flex items-center gap-3 px-4 py-2.5">
+                    <FileText className="w-4 h-4 text-slate-400 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-slate-900 truncate">{d.nome}</p>
+                      <p className="text-xs text-slate-400">{d.tipo}</p>
+                    </div>
+                    <div className="flex gap-1 shrink-0">
+                      <a href={d.url_arquivo} target="_blank" rel="noopener noreferrer"
+                        className="p-1 rounded text-slate-400 hover:text-amber-600 transition-colors">
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                      <form action={excluirDoc}>
+                        <input type="hidden" name="doc_id" value={d.id} />
+                        <button type="submit" className="p-1 rounded text-slate-400 hover:text-red-500 transition-colors">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                ))
               )}
             </div>
           </div>

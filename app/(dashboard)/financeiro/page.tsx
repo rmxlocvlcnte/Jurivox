@@ -1,19 +1,9 @@
-// -----------------------------------------------
-// FINANCEIRO — Honorários, pagamentos e fluxo de caixa
-// -----------------------------------------------
-// Mostra:
-// - Resumo financeiro (entradas, saídas, saldo)
-// - Lista de honorários por processo
-// - Histórico de movimentações financeiras
-// -----------------------------------------------
-
 import { getAuthContext } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
-import { criarMovimentacaoFinanceira } from '@/lib/actions/financeiro'
+import { criarMovimentacaoFinanceira, criarHonorario, registrarPagamento } from '@/lib/actions/financeiro'
 import {
   DollarSign, TrendingUp, TrendingDown, Plus,
-  ArrowUpCircle, ArrowDownCircle,
+  ArrowUpCircle, ArrowDownCircle, FileText, CreditCard,
 } from 'lucide-react'
 
 function formatarMoeda(valor: number) {
@@ -24,17 +14,15 @@ function formatarData(data: string) {
   return new Date(data + 'T12:00:00').toLocaleDateString('pt-BR')
 }
 
-const CATEGORIAS_ENTRADA = ['Honorários', 'Êxito', 'Consultoria', 'Outro']
-const CATEGORIAS_SAIDA = ['Custas judiciais', 'Cópias', 'Diligências', 'Salários', 'Aluguel', 'Outro']
-
 export default async function FinanceiroPage() {
   const { escritorioId, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/onboarding')
 
-  // Busca movimentações financeiras e honorários em paralelo
   const [
     { data: movimentacoes },
     { data: honorarios },
+    { data: processos },
+    { data: clientes },
   ] = await Promise.all([
     supabase
       .from('movimentacoes_financeiras')
@@ -47,14 +35,26 @@ export default async function FinanceiroPage() {
       .from('honorarios')
       .select(`
         id, tipo, valor_total, numero_parcelas, status, descricao, criado_em,
-        processos(numero_cnj, clientes(nome)),
+        processos(id, numero_cnj, clientes(nome)),
         pagamentos_honorarios(valor, data_pagamento)
       `)
       .eq('escritorio_id', escritorioId)
       .order('criado_em', { ascending: false }),
+
+    supabase
+      .from('processos')
+      .select('id, numero_cnj')
+      .eq('escritorio_id', escritorioId)
+      .eq('status', 'ativo')
+      .order('numero_cnj'),
+
+    supabase
+      .from('clientes')
+      .select('id, nome')
+      .eq('escritorio_id', escritorioId)
+      .order('nome'),
   ])
 
-  // Calcula totais do mês atual
   const inicioMes = new Date()
   inicioMes.setDate(1)
   inicioMes.setHours(0, 0, 0, 0)
@@ -67,139 +67,276 @@ export default async function FinanceiroPage() {
     ?.filter(m => m.tipo === 'saida' && new Date(m.data) >= inicioMes)
     .reduce((acc, m) => acc + (m.valor ?? 0), 0) ?? 0
 
-  // Total recebido de honorários
-  const totalHonorarios = honorarios?.reduce((acc, h) => {
-    const pagamentos = (h.pagamentos_honorarios as any[])?.reduce((s: number, p: any) => s + (p.valor ?? 0), 0) ?? 0
-    return acc + pagamentos
+  const totalHonorariosRecebidos = honorarios?.reduce((acc, h) => {
+    const pago = (h.pagamentos_honorarios as any[])?.reduce((s: number, p: any) => s + (p.valor ?? 0), 0) ?? 0
+    return acc + pago
   }, 0) ?? 0
 
-  // Server action para nova movimentação
+  const totalHonorariosPendentes = honorarios
+    ?.filter(h => h.status !== 'quitado' && h.status !== 'cancelado')
+    .reduce((acc, h) => {
+      const pago = (h.pagamentos_honorarios as any[])?.reduce((s: number, p: any) => s + (p.valor ?? 0), 0) ?? 0
+      return acc + (h.valor_total - pago)
+    }, 0) ?? 0
+
   async function novaMovimentacao(formData: FormData) {
     'use server'
     await criarMovimentacaoFinanceira(formData)
   }
+  async function novoHonorario(formData: FormData) {
+    'use server'
+    await criarHonorario(formData)
+  }
+  async function novoPagamento(formData: FormData) {
+    'use server'
+    await registrarPagamento(formData)
+  }
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
-      {/* Cabeçalho */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Financeiro</h1>
-          <p className="text-slate-500 text-sm mt-1">Controle de honorários e fluxo de caixa</p>
+          <h1 className="text-xl md:text-2xl font-bold text-slate-900">Financeiro</h1>
+          <p className="text-slate-500 text-sm mt-1">Honorários, pagamentos e fluxo de caixa</p>
         </div>
       </div>
 
       {/* Cards de resumo */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-500">Entradas este mês</p>
-              <p className="text-2xl font-bold text-green-700 mt-1">{formatarMoeda(entradas)}</p>
-            </div>
-            <div className="bg-green-50 p-3 rounded-lg">
-              <TrendingUp className="w-6 h-6 text-green-600" />
-            </div>
-          </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+          <p className="text-xs text-slate-500">Entradas este mês</p>
+          <p className="text-xl font-bold text-green-700 mt-1">{formatarMoeda(entradas)}</p>
+          <TrendingUp className="w-4 h-4 text-green-500 mt-1" />
         </div>
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-500">Saídas este mês</p>
-              <p className="text-2xl font-bold text-red-700 mt-1">{formatarMoeda(saidas)}</p>
-            </div>
-            <div className="bg-red-50 p-3 rounded-lg">
-              <TrendingDown className="w-6 h-6 text-red-600" />
-            </div>
-          </div>
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+          <p className="text-xs text-slate-500">Saídas este mês</p>
+          <p className="text-xl font-bold text-red-700 mt-1">{formatarMoeda(saidas)}</p>
+          <TrendingDown className="w-4 h-4 text-red-500 mt-1" />
         </div>
-        <div className={`rounded-xl border shadow-sm p-5 ${entradas - saidas >= 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-          <div className="flex items-center justify-between">
+        <div className="bg-green-50 rounded-xl border border-green-100 p-4">
+          <p className="text-xs text-slate-500">Honorários recebidos</p>
+          <p className="text-xl font-bold text-green-700 mt-1">{formatarMoeda(totalHonorariosRecebidos)}</p>
+          <CreditCard className="w-4 h-4 text-green-500 mt-1" />
+        </div>
+        <div className="bg-amber-50 rounded-xl border border-amber-100 p-4">
+          <p className="text-xs text-slate-500">Honorários a receber</p>
+          <p className="text-xl font-bold text-amber-700 mt-1">{formatarMoeda(totalHonorariosPendentes)}</p>
+          <DollarSign className="w-4 h-4 text-amber-500 mt-1" />
+        </div>
+      </div>
+
+      {/* HONORÁRIOS */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+          <h2 className="font-semibold text-slate-900 flex items-center gap-2">
+            <FileText className="w-4 h-4 text-slate-400" /> Honorários por Processo
+          </h2>
+          <p className="text-sm text-green-700 font-semibold">{formatarMoeda(totalHonorariosRecebidos)} recebido</p>
+        </div>
+
+        {/* Formulário novo honorário */}
+        <div className="px-5 py-4 bg-slate-50 border-b border-slate-100">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Novo Honorário</p>
+          <form action={novoHonorario} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div>
-              <p className="text-sm text-slate-500">Saldo do Mês</p>
-              <p className={`text-2xl font-bold mt-1 ${entradas - saidas >= 0 ? 'text-green-800' : 'text-red-800'}`}>
-                {formatarMoeda(entradas - saidas)}
-              </p>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Processo *</label>
+              <select
+                name="processo_id"
+                required
+                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+              >
+                <option value="">Selecionar...</option>
+                {processos?.map(p => <option key={p.id} value={p.id}>{p.numero_cnj}</option>)}
+              </select>
             </div>
-            <div className={`p-3 rounded-lg ${entradas - saidas >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
-              <DollarSign className={`w-6 h-6 ${entradas - saidas >= 0 ? 'text-green-700' : 'text-red-700'}`} />
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Tipo *</label>
+              <select
+                name="tipo"
+                required
+                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+              >
+                <option value="pro_labore">Pró-labore</option>
+                <option value="exito">Êxito</option>
+                <option value="parcelado">Parcelado</option>
+              </select>
             </div>
-          </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Valor total (R$) *</label>
+              <input
+                name="valor_total"
+                type="number"
+                step="0.01"
+                min="0.01"
+                required
+                placeholder="0,00"
+                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Parcelas</label>
+              <div className="flex gap-2">
+                <input
+                  name="numero_parcelas"
+                  type="number"
+                  min="1"
+                  defaultValue="1"
+                  className="w-20 px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400"
+                />
+                <button
+                  type="submit"
+                  className="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold py-2 px-3 rounded-lg transition-colors text-sm"
+                >
+                  <Plus className="w-4 h-4 mx-auto" />
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        {/* Lista de honorários */}
+        <div className="divide-y divide-slate-100">
+          {!honorarios?.length ? (
+            <div className="px-5 py-6 text-center text-slate-400 text-sm">
+              Nenhum honorário cadastrado. Use o formulário acima.
+            </div>
+          ) : (
+            honorarios.map((h) => {
+              const processo = h.processos as any
+              const pagamentos = (h.pagamentos_honorarios as any[]) ?? []
+              const totalPago = pagamentos.reduce((acc, p) => acc + (p.valor ?? 0), 0)
+              const percPago = h.valor_total > 0 ? (totalPago / h.valor_total) * 100 : 0
+              const pendente = h.valor_total - totalPago
+
+              const STATUS_CLS: Record<string, string> = {
+                pendente: 'bg-amber-100 text-amber-700',
+                parcial: 'bg-blue-100 text-blue-700',
+                quitado: 'bg-green-100 text-green-700',
+                cancelado: 'bg-slate-100 text-slate-500',
+              }
+
+              return (
+                <div key={h.id} className="px-5 py-4">
+                  <div className="flex items-start justify-between gap-4 mb-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-semibold text-slate-900">
+                          {processo?.clientes?.nome ?? 'Sem cliente'}
+                        </p>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_CLS[h.status] ?? STATUS_CLS.pendente}`}>
+                          {h.status}
+                        </span>
+                      </div>
+                      <p className="text-xs font-mono text-slate-400 mt-0.5">{processo?.numero_cnj}</p>
+                      <p className="text-xs text-slate-400">
+                        {h.tipo === 'exito' ? 'Êxito' : h.tipo === 'pro_labore' ? 'Pró-labore' : `Parcelado (${h.numero_parcelas}x)`}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-bold text-slate-900">{formatarMoeda(h.valor_total)}</p>
+                      <p className="text-xs text-green-600">{formatarMoeda(totalPago)} pago</p>
+                      {pendente > 0 && <p className="text-xs text-amber-600">{formatarMoeda(pendente)} pendente</p>}
+                    </div>
+                  </div>
+
+                  {/* Barra de progresso */}
+                  <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden mb-3">
+                    <div className="h-full bg-green-500 rounded-full" style={{ width: `${Math.min(percPago, 100)}%` }} />
+                  </div>
+
+                  {/* Formulário de pagamento inline */}
+                  {h.status !== 'quitado' && h.status !== 'cancelado' && (
+                    <form action={novoPagamento} className="flex flex-wrap gap-2 mt-2">
+                      <input type="hidden" name="honorario_id" value={h.id} />
+                      <input
+                        name="valor"
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        required
+                        placeholder="Valor (R$)"
+                        className="w-32 px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400"
+                      />
+                      <input
+                        name="data_pagamento"
+                        type="date"
+                        required
+                        defaultValue={new Date().toISOString().split('T')[0]}
+                        className="px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400"
+                      />
+                      <select
+                        name="forma_pagamento"
+                        className="px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+                      >
+                        <option value="pix">PIX</option>
+                        <option value="ted">TED</option>
+                        <option value="boleto">Boleto</option>
+                        <option value="dinheiro">Dinheiro</option>
+                        <option value="cartao">Cartão</option>
+                      </select>
+                      <button
+                        type="submit"
+                        className="px-3 py-1.5 text-xs font-semibold bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors"
+                      >
+                        + Registrar pagamento
+                      </button>
+                    </form>
+                  )}
+
+                  {/* Histórico de pagamentos */}
+                  {pagamentos.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      {pagamentos.map((p: any, i: number) => (
+                        <p key={i} className="text-xs text-slate-400">
+                          ✓ {formatarMoeda(p.valor)} em {formatarData(p.data_pagamento)}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })
+          )}
         </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-
-        {/* Registrar nova movimentação */}
+        {/* Registrar movimentação */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
           <h2 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
             <Plus className="w-4 h-4" /> Registrar Movimentação
           </h2>
-          <form action={novaMovimentacao} className="space-y-4">
+          <form action={novaMovimentacao} className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">Tipo</label>
-                <select
-                  name="tipo"
-                  required
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400 bg-white"
-                >
+                <select name="tipo" required className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400 bg-white">
                   <option value="entrada">Entrada</option>
                   <option value="saida">Saída</option>
                 </select>
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">Valor (R$)</label>
-                <input
-                  name="valor"
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  required
-                  placeholder="0,00"
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400"
-                />
+                <input name="valor" type="number" step="0.01" min="0.01" required placeholder="0,00"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400" />
               </div>
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Categoria</label>
-              <input
-                name="categoria"
-                type="text"
-                placeholder="Ex: Honorários, Custas judiciais..."
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400"
-                list="categorias"
-              />
-              <datalist id="categorias">
-                {[...CATEGORIAS_ENTRADA, ...CATEGORIAS_SAIDA].map(c => (
-                  <option key={c} value={c} />
-                ))}
-              </datalist>
+              <input name="categoria" type="text" placeholder="Ex: Honorários, Custas judiciais..."
+                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400" />
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Descrição</label>
-              <input
-                name="descricao"
-                type="text"
-                required
-                placeholder="Descrição da movimentação"
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400"
-              />
+              <input name="descricao" type="text" required placeholder="Descrição da movimentação"
+                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400" />
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Data</label>
-              <input
-                name="data"
-                type="date"
-                required
-                defaultValue={new Date().toISOString().split('T')[0]}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400"
-              />
+              <input name="data" type="date" required defaultValue={new Date().toISOString().split('T')[0]}
+                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400" />
             </div>
-            <button
-              type="submit"
-              className="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold py-2.5 rounded-lg transition-colors text-sm"
-            >
+            <button type="submit" className="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold py-2.5 rounded-lg transition-colors text-sm">
               Registrar
             </button>
           </form>
@@ -212,16 +349,13 @@ export default async function FinanceiroPage() {
           </div>
           <div className="divide-y divide-slate-100 max-h-80 overflow-y-auto">
             {!movimentacoes?.length ? (
-              <div className="px-5 py-6 text-center text-slate-400 text-sm">
-                Nenhuma movimentação registrada.
-              </div>
+              <div className="px-5 py-6 text-center text-slate-400 text-sm">Nenhuma movimentação registrada.</div>
             ) : (
               movimentacoes.map((m) => (
                 <div key={m.id} className="flex items-center gap-3 px-5 py-3">
                   {m.tipo === 'entrada'
                     ? <ArrowUpCircle className="w-5 h-5 text-green-500 shrink-0" />
-                    : <ArrowDownCircle className="w-5 h-5 text-red-500 shrink-0" />
-                  }
+                    : <ArrowDownCircle className="w-5 h-5 text-red-500 shrink-0" />}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-slate-900 truncate">{m.descricao}</p>
                     <p className="text-xs text-slate-400">{m.categoria} · {formatarData(m.data)}</p>
@@ -233,56 +367,6 @@ export default async function FinanceiroPage() {
               ))
             )}
           </div>
-        </div>
-      </div>
-
-      {/* Honorários por processo */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-          <h2 className="font-semibold text-slate-900">Honorários por Processo</h2>
-          <p className="text-sm text-green-700 font-semibold">{formatarMoeda(totalHonorarios)} recebido no total</p>
-        </div>
-        <div className="divide-y divide-slate-100">
-          {!honorarios?.length ? (
-            <div className="px-5 py-6 text-center text-slate-400 text-sm">
-              Nenhum contrato de honorários cadastrado.
-              <p className="mt-1 text-xs">Cadastre honorários na tela de cada processo.</p>
-            </div>
-          ) : (
-            honorarios.map((h) => {
-              const processo = h.processos as any
-              const pagamentos = (h.pagamentos_honorarios as any[]) ?? []
-              const totalPago = pagamentos.reduce((acc, p) => acc + (p.valor ?? 0), 0)
-              const percPago = h.valor_total > 0 ? (totalPago / h.valor_total) * 100 : 0
-
-              return (
-                <div key={h.id} className="px-5 py-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <p className="text-sm font-medium text-slate-900">
-                        {processo?.clientes?.nome ?? 'Sem cliente'}
-                      </p>
-                      <p className="text-xs font-mono text-slate-400">{processo?.numero_cnj}</p>
-                      <p className="text-xs text-slate-400 mt-0.5">
-                        {h.tipo === 'exito' ? 'Êxito' : h.tipo === 'pro_labore' ? 'Pró-labore' : `Parcelado (${h.numero_parcelas}x)`}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-slate-900">{formatarMoeda(h.valor_total)}</p>
-                      <p className="text-xs text-green-600">{formatarMoeda(totalPago)} recebido</p>
-                    </div>
-                  </div>
-                  {/* Barra de progresso de pagamento */}
-                  <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-green-500 rounded-full transition-all"
-                      style={{ width: `${Math.min(percPago, 100)}%` }}
-                    />
-                  </div>
-                </div>
-              )
-            })
-          )}
         </div>
       </div>
     </div>
