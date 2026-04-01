@@ -1,10 +1,11 @@
 'use client'
 
 import { UserButton } from '@clerk/nextjs'
-import { Search, Bell, Menu } from 'lucide-react'
+import { Search, Menu } from 'lucide-react'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSidebar } from './sidebar-context'
+import { NotificacoesBell } from './notificacoes-bell'
 
 export function Header() {
   const [busca, setBusca] = useState('')
@@ -109,16 +110,7 @@ export function Header() {
           </button>
         )}
 
-        <button
-          className="relative p-2 rounded-xl text-slate-600 hover:bg-slate-100 transition-colors"
-          aria-label="Notificações"
-        >
-          <Bell className="w-5 h-5" />
-          <span
-            className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full border-2 border-white"
-            style={{ background: '#ef4444' }}
-          />
-        </button>
+        <NotificacoesBell />
 
         <UserButton
           afterSignOutUrl="/sign-in"

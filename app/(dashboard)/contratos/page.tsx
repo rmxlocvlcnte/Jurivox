@@ -34,6 +34,7 @@ export default async function ContratosPage() {
     `)
     .eq('escritorio_id', escritorioId)
     .order('criado_em', { ascending: false })
+    .limit(200)
 
   const ativos = contratos?.filter(c => c.status === 'ativo').length ?? 0
   const suspensos = contratos?.filter(c => c.status === 'suspenso').length ?? 0

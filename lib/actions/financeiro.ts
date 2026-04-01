@@ -3,46 +3,81 @@
 // -----------------------------------------------
 // FINANCEIRO — Honorários, pagamentos, fluxo de caixa
 // -----------------------------------------------
-// Honorários: o contrato de quanto o cliente deve pagar
-// Pagamentos: cada parcela paga pelo cliente
-// Movimentações: entradas e saídas do escritório
-// -----------------------------------------------
 
 import { getAuthContext } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import { z } from 'zod'
 
-// ---- CRIAR HONORÁRIO (contrato de pagamento) ----
+// ---- SCHEMAS ZOD ----
+
+const HonorarioSchema = z.object({
+  processo_id: z.string().uuid('Processo inválido.'),
+  tipo: z.enum(['exito', 'pro_labore', 'parcelado'], {
+    errorMap: () => ({ message: 'Tipo de honorário inválido.' }),
+  }),
+  valor_total: z.number({ invalid_type_error: 'Valor deve ser um número.' })
+    .positive('Valor deve ser maior que zero.')
+    .max(10_000_000, 'Valor muito alto.'),
+  numero_parcelas: z.number().int().min(1).max(360).default(1),
+  descricao: z.string().max(500).optional().nullable(),
+})
+
+const PagamentoSchema = z.object({
+  honorario_id: z.string().uuid('Honorário inválido.'),
+  valor: z.number({ invalid_type_error: 'Valor deve ser um número.' })
+    .positive('Valor deve ser maior que zero.'),
+  data_pagamento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida.'),
+  forma_pagamento: z.enum(['pix', 'transferencia', 'boleto', 'dinheiro', 'cheque', 'cartao'])
+    .default('pix'),
+  observacao: z.string().max(500).optional().nullable(),
+})
+
+const MovimentacaoSchema = z.object({
+  tipo: z.enum(['entrada', 'saida'], {
+    errorMap: () => ({ message: 'Tipo deve ser entrada ou saída.' }),
+  }),
+  categoria: z.string().min(1, 'Categoria obrigatória.').max(100),
+  descricao: z.string().min(1, 'Descrição obrigatória.').max(500),
+  valor: z.number({ invalid_type_error: 'Valor deve ser um número.' })
+    .positive('Valor deve ser maior que zero.'),
+  data: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida.'),
+})
+
+// ---- CRIAR HONORÁRIO ----
 export async function criarHonorario(formData: FormData) {
   const { escritorioId, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/sign-in')
 
-  const dados = {
-    escritorio_id: escritorioId,
-    processo_id: formData.get('processo_id') as string,
-    cliente_id: formData.get('cliente_id') as string,
-    tipo: formData.get('tipo') as string, // exito | pro_labore | parcelado
+  const parse = HonorarioSchema.safeParse({
+    processo_id: formData.get('processo_id'),
+    tipo: formData.get('tipo'),
     valor_total: parseFloat(formData.get('valor_total') as string),
     numero_parcelas: parseInt(formData.get('numero_parcelas') as string) || 1,
     descricao: (formData.get('descricao') as string)?.trim() || null,
-    status: 'pendente',
+  })
+
+  if (!parse.success) {
+    return { erro: parse.error.errors[0]?.message ?? 'Dados inválidos.' }
   }
 
-  if (!dados.processo_id || isNaN(dados.valor_total)) {
-    return { erro: 'Processo e valor total são obrigatórios.' }
-  }
+  const dados = parse.data
 
-  // Verifica que o processo pertence ao escritório
   const { data: processo } = await supabase
     .from('processos')
-    .select('id')
+    .select('id, cliente_id')
     .eq('id', dados.processo_id)
     .eq('escritorio_id', escritorioId)
     .single()
 
   if (!processo) return { erro: 'Processo não encontrado.' }
 
-  const { error } = await supabase.from('honorarios').insert(dados)
+  const { error } = await supabase.from('honorarios').insert({
+    ...dados,
+    cliente_id: processo.cliente_id,
+    escritorio_id: escritorioId,
+    status: 'pendente',
+  })
 
   if (error) {
     console.error('Erro ao criar honorário:', error)
@@ -53,50 +88,67 @@ export async function criarHonorario(formData: FormData) {
   redirect('/financeiro')
 }
 
-// ---- REGISTRAR PAGAMENTO RECEBIDO ----
+// ---- REGISTRAR PAGAMENTO ----
 export async function registrarPagamento(formData: FormData) {
   const { escritorioId, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/sign-in')
 
-  const dados = {
-    honorario_id: formData.get('honorario_id') as string,
-    escritorio_id: escritorioId,
+  const parse = PagamentoSchema.safeParse({
+    honorario_id: formData.get('honorario_id'),
     valor: parseFloat(formData.get('valor') as string),
-    data_pagamento: formData.get('data_pagamento') as string,
-    forma_pagamento: (formData.get('forma_pagamento') as string) || 'pix',
+    data_pagamento: formData.get('data_pagamento'),
+    forma_pagamento: formData.get('forma_pagamento') || 'pix',
     observacao: (formData.get('observacao') as string)?.trim() || null,
+  })
+
+  if (!parse.success) {
+    return { erro: parse.error.errors[0]?.message ?? 'Dados inválidos.' }
   }
 
-  if (!dados.honorario_id || isNaN(dados.valor) || !dados.data_pagamento) {
-    return { erro: 'Honorário, valor e data são obrigatórios.' }
-  }
+  const dados = parse.data
 
-  const { error } = await supabase.from('pagamentos_honorarios').insert(dados)
+  const { data: honorario } = await supabase
+    .from('honorarios')
+    .select('id')
+    .eq('id', dados.honorario_id)
+    .eq('escritorio_id', escritorioId)
+    .single()
+
+  if (!honorario) return { erro: 'Honorário não encontrado.' }
+
+  const { error } = await supabase.from('pagamentos_honorarios').insert({
+    ...dados,
+    escritorio_id: escritorioId,
+  })
+
   if (error) return { erro: 'Não foi possível registrar o pagamento.' }
 
   revalidatePath('/financeiro')
   redirect('/financeiro')
 }
 
-// ---- REGISTRAR MOVIMENTAÇÃO (entrada ou saída) ----
+// ---- REGISTRAR MOVIMENTAÇÃO ----
 export async function criarMovimentacaoFinanceira(formData: FormData) {
   const { escritorioId, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/sign-in')
 
-  const dados = {
-    escritorio_id: escritorioId,
-    tipo: formData.get('tipo') as string, // 'entrada' | 'saida'
+  const parse = MovimentacaoSchema.safeParse({
+    tipo: formData.get('tipo'),
     categoria: (formData.get('categoria') as string)?.trim(),
     descricao: (formData.get('descricao') as string)?.trim(),
     valor: parseFloat(formData.get('valor') as string),
-    data: formData.get('data') as string,
+    data: formData.get('data'),
+  })
+
+  if (!parse.success) {
+    return { erro: parse.error.errors[0]?.message ?? 'Dados inválidos.' }
   }
 
-  if (!dados.tipo || isNaN(dados.valor) || !dados.descricao || !dados.data) {
-    return { erro: 'Preencha todos os campos obrigatórios.' }
-  }
+  const { error } = await supabase.from('movimentacoes_financeiras').insert({
+    ...parse.data,
+    escritorio_id: escritorioId,
+  })
 
-  const { error } = await supabase.from('movimentacoes_financeiras').insert(dados)
   if (error) {
     console.error('Erro ao criar movimentação:', error)
     return { erro: 'Não foi possível registrar a movimentação.' }

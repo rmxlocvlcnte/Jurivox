@@ -1,20 +1,21 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 
-// Define quais rotas SÃO PÚBLICAS (não precisam de login)
+// Rotas públicas — não exigem login
 const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)',
   '/sign-up(.*)',
   '/api/webhook(.*)',
+  // Cron de notificações autenticado por CRON_SECRET, não por Clerk
+  '/api/notificacoes(.*)',
 ])
 
-// O proxy roda em TODA requisição antes de chegar à página
 export default clerkMiddleware(async (auth, request) => {
   if (!isPublicRoute(request)) {
     await auth.protect()
   }
 
-  // Injeta o pathname atual nos headers da requisição
+  // Injeta pathname nos headers para o layout conseguir ler
   const headers = new Headers(request.headers)
   headers.set('x-pathname', request.nextUrl.pathname)
 

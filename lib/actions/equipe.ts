@@ -4,6 +4,7 @@ import { getAuthContext } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 
+// ---- ENVIAR CONVITE ----
 export async function enviarConvite(formData: FormData) {
   const { escritorioId, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/sign-in')
@@ -14,14 +15,12 @@ export async function enviarConvite(formData: FormData) {
 
   if (!nomeConvidado || !emailConvidado) return { erro: 'Nome e e-mail são obrigatórios.' }
 
-  // Busca dados do escritório para o e-mail
   const { data: escritorio } = await supabase
     .from('escritorios')
     .select('nome')
     .eq('id', escritorioId)
     .single()
 
-  // Tenta enviar e-mail via Resend (opcional — só funciona se RESEND_API_KEY estiver configurada)
   const resendKey = process.env.RESEND_API_KEY
   const fromEmail = process.env.RESEND_FROM_EMAIL ?? 'noreply@jurisflow.com.br'
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://jurisflow.vercel.app'
@@ -50,10 +49,68 @@ export async function enviarConvite(formData: FormData) {
       })
     } catch (err) {
       console.error('Erro ao enviar e-mail de convite:', err)
-      // Não bloqueia o fluxo se o e-mail falhar
     }
   }
 
   revalidatePath('/equipe')
   return { sucesso: true, email: emailConvidado, resendConfigurado: !!resendKey }
+}
+
+// ---- REMOVER MEMBRO ----
+export async function removerMembro(membroId: string) {
+  const { escritorioId, membroId: meuId, cargo, supabase } = await getAuthContext()
+  if (!escritorioId || !supabase) redirect('/sign-in')
+
+  // Apenas sócios e admins podem remover membros
+  if (cargo !== 'socio' && cargo !== 'admin') {
+    return { erro: 'Sem permissão para remover membros.' }
+  }
+
+  // Não pode remover a si mesmo
+  if (membroId === meuId) {
+    return { erro: 'Você não pode remover a si mesmo.' }
+  }
+
+  const { error } = await supabase
+    .from('membros_escritorio')
+    .delete()
+    .eq('id', membroId)
+    .eq('escritorio_id', escritorioId)
+
+  if (error) {
+    console.error('Erro ao remover membro:', error)
+    return { erro: 'Não foi possível remover o membro.' }
+  }
+
+  revalidatePath('/equipe')
+  return { sucesso: true }
+}
+
+// ---- EDITAR CARGO ----
+export async function editarCargo(membroId: string, novoCargo: string) {
+  const { escritorioId, cargo, supabase } = await getAuthContext()
+  if (!escritorioId || !supabase) redirect('/sign-in')
+
+  if (cargo !== 'socio' && cargo !== 'admin') {
+    return { erro: 'Sem permissão para editar cargos.' }
+  }
+
+  const cargosValidos = ['socio', 'admin', 'advogado', 'estagiario']
+  if (!cargosValidos.includes(novoCargo)) {
+    return { erro: 'Cargo inválido.' }
+  }
+
+  const { error } = await supabase
+    .from('membros_escritorio')
+    .update({ cargo: novoCargo })
+    .eq('id', membroId)
+    .eq('escritorio_id', escritorioId)
+
+  if (error) {
+    console.error('Erro ao editar cargo:', error)
+    return { erro: 'Não foi possível atualizar o cargo.' }
+  }
+
+  revalidatePath('/equipe')
+  return { sucesso: true }
 }

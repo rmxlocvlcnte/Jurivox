@@ -6,10 +6,11 @@ import { getAuthContext } from '@/lib/auth'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { adicionarObservacao } from '@/lib/actions/clientes'
+import { enviarWhatsAppCliente } from '@/lib/actions/whatsapp'
 import { UploadDocumento } from '@/components/upload-documento'
 import {
   ChevronLeft, Pencil, Phone, Mail, MapPin,
-  User, FileText, FolderOpen,
+  User, FileText, FolderOpen, MessageCircle,
 } from 'lucide-react'
 
 function formatarData(data: string) {
@@ -52,6 +53,11 @@ export default async function ClienteDetalhePage({
   async function adicionarObservacaoNeste(formData: FormData) {
     'use server'
     await adicionarObservacao(id, formData)
+  }
+
+  async function enviarWhatsApp(formData: FormData) {
+    'use server'
+    await enviarWhatsAppCliente(id, formData)
   }
 
   const LABEL_AREA: Record<string, string> = {
@@ -180,6 +186,36 @@ export default async function ClienteDetalhePage({
             escritorioId={escritorioId}
             documentos={documentos ?? []}
           />
+
+          {/* WhatsApp */}
+          {(cliente.whatsapp || cliente.telefone) && (
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+              <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
+                <MessageCircle className="w-4 h-4 text-green-500" />
+                <h2 className="font-semibold text-slate-900">Enviar WhatsApp</h2>
+              </div>
+              <div className="px-5 py-4">
+                <p className="text-xs text-slate-400 mb-3">
+                  Número: <span className="font-medium text-slate-600">{cliente.whatsapp || cliente.telefone}</span>
+                </p>
+                <form action={enviarWhatsApp} className="space-y-3">
+                  <textarea
+                    name="mensagem"
+                    rows={3}
+                    required
+                    placeholder="Digite a mensagem para o cliente..."
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-green-400 resize-none"
+                  />
+                  <button
+                    type="submit"
+                    className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors text-sm"
+                  >
+                    <MessageCircle className="w-4 h-4" /> Enviar Mensagem
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Coluna direita: processos */}

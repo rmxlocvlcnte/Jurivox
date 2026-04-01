@@ -125,6 +125,19 @@ export async function whatsappNovoPrazo({
 }
 
 // -----------------------------------------------
+// WhatsApp: Mensagem personalizada para cliente
+// -----------------------------------------------
+export async function whatsappMensagemPersonalizada({
+  telefone,
+  mensagem,
+}: {
+  telefone: string
+  mensagem: string
+}) {
+  await enviarMensagem(telefone, mensagem)
+}
+
+// -----------------------------------------------
 // WhatsApp: Lembrete de prazo vencendo (usar em cron job)
 // -----------------------------------------------
 export async function whatsappLembretePrazo({

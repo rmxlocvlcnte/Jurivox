@@ -1,7 +1,7 @@
 import { getAuthContext } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import { enviarConvite } from '@/lib/actions/equipe'
-import { Users, Crown, Briefcase, GraduationCap, ShieldCheck, Mail, Clock, Plus, Send } from 'lucide-react'
+import { enviarConvite, removerMembro, editarCargo } from '@/lib/actions/equipe'
+import { Users, Crown, Briefcase, GraduationCap, ShieldCheck, Mail, Clock, Plus, Send, Trash2, Pencil } from 'lucide-react'
 
 const CARGO_CONFIG: Record<string, { label: string; cls: string; icon: any }> = {
   socio: { label: 'Sócio', cls: 'bg-amber-100 text-amber-700', icon: Crown },
@@ -11,8 +11,10 @@ const CARGO_CONFIG: Record<string, { label: string; cls: string; icon: any }> = 
 }
 
 export default async function EquipePage() {
-  const { escritorioId, membroId, supabase } = await getAuthContext()
+  const { escritorioId, membroId, cargo: meuCargo, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/onboarding')
+
+  const podeGerenciar = meuCargo === 'socio' || meuCargo === 'admin'
 
   const [{ data: membros }, { data: escritorio }] = await Promise.all([
     supabase
@@ -72,14 +74,18 @@ export default async function EquipePage() {
       )}
 
       <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
-        {/* Membros */}
+        {/* Lista de membros */}
         <div className="xl:col-span-3 bg-white rounded-xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
             <h2 className="font-semibold text-slate-900 flex items-center gap-2">
               <Users className="w-4 h-4 text-slate-400" />
               Membros ({membros?.length ?? 0})
             </h2>
+            {!podeGerenciar && (
+              <span className="text-xs text-slate-400">Somente sócios e admins podem gerenciar</span>
+            )}
           </div>
+
           <div className="divide-y divide-slate-100">
             {!membros?.length ? (
               <div className="px-5 py-8 text-center text-slate-400 text-sm">
@@ -92,32 +98,81 @@ export default async function EquipePage() {
                 const isEu = m.id === membroId
 
                 return (
-                  <div key={m.id} className={`flex items-center gap-4 px-5 py-4 ${isEu ? 'bg-amber-50' : ''}`}>
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shrink-0">
-                      <span className="text-white font-bold text-sm">
-                        {m.nome.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-slate-900">{m.nome}</p>
-                        {isEu && <span className="text-xs text-amber-600 font-medium">(você)</span>}
+                  <div key={m.id} className={`px-5 py-4 ${isEu ? 'bg-amber-50' : ''}`}>
+                    <div className="flex items-center gap-3">
+                      {/* Avatar */}
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shrink-0">
+                        <span className="text-white font-bold text-sm">
+                          {m.nome.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()}
+                        </span>
                       </div>
-                      <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-                        <Mail className="w-3 h-3" />
-                        {m.email}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <p className="text-xs text-slate-400 hidden sm:flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {new Date(m.criado_em).toLocaleDateString('pt-BR')}
-                      </p>
-                      <span className={`text-xs font-medium px-2 py-1 rounded-full flex items-center gap-1 ${cfg.cls}`}>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm font-semibold text-slate-900">{m.nome}</p>
+                          {isEu && <span className="text-xs text-amber-600 font-medium">(você)</span>}
+                        </div>
+                        <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+                          <Mail className="w-3 h-3" />
+                          {m.email}
+                        </p>
+                        <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+                          <Clock className="w-3 h-3" />
+                          Desde {new Date(m.criado_em).toLocaleDateString('pt-BR')}
+                        </p>
+                      </div>
+
+                      {/* Cargo badge */}
+                      <span className={`text-xs font-medium px-2 py-1 rounded-full flex items-center gap-1 shrink-0 ${cfg.cls}`}>
                         <Icon className="w-3 h-3" />
                         {cfg.label}
                       </span>
                     </div>
+
+                    {/* Ações de gestão (só para admins/sócios, e não para si mesmo) */}
+                    {podeGerenciar && !isEu && (
+                      <div className="flex items-center gap-2 mt-3 pl-13">
+                        {/* Editar cargo */}
+                        <form action={async (fd: FormData) => {
+                          'use server'
+                          await editarCargo(m.id, fd.get('cargo') as string)
+                        }} className="flex items-center gap-2">
+                          <select
+                            name="cargo"
+                            defaultValue={m.cargo ?? 'advogado'}
+                            className="text-xs border border-slate-200 rounded-lg px-2 py-1 outline-none focus:ring-1 focus:ring-amber-400 bg-white"
+                          >
+                            <option value="socio">Sócio</option>
+                            <option value="admin">Admin</option>
+                            <option value="advogado">Advogado</option>
+                            <option value="estagiario">Estagiário</option>
+                          </select>
+                          <button
+                            type="submit"
+                            className="flex items-center gap-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded-lg transition-colors"
+                          >
+                            <Pencil className="w-3 h-3" /> Atualizar
+                          </button>
+                        </form>
+
+                        {/* Remover membro */}
+                        <form action={async () => {
+                          'use server'
+                          await removerMembro(m.id)
+                        }}>
+                          <button
+                            type="submit"
+                            className="flex items-center gap-1 text-xs bg-red-50 hover:bg-red-100 text-red-600 px-2 py-1 rounded-lg transition-colors"
+                            onClick={(e) => {
+                              if (!confirm(`Remover ${m.nome} da equipe?`)) e.preventDefault()
+                            }}
+                          >
+                            <Trash2 className="w-3 h-3" /> Remover
+                          </button>
+                        </form>
+                      </div>
+                    )}
                   </div>
                 )
               })
@@ -125,7 +180,7 @@ export default async function EquipePage() {
           </div>
         </div>
 
-        {/* Convidar novo membro */}
+        {/* Painel lateral: convidar + info */}
         <div className="xl:col-span-2 space-y-4">
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
             <h2 className="font-semibold text-slate-900 mb-1 flex items-center gap-2">
@@ -185,6 +240,17 @@ export default async function EquipePage() {
               <li>Você confirma o acesso aqui</li>
             </ol>
           </div>
+
+          {podeGerenciar && (
+            <div className="bg-amber-50 rounded-xl border border-amber-100 p-4">
+              <p className="text-xs font-semibold text-amber-800 mb-1">Permissões de cargo</p>
+              <ul className="text-xs text-amber-700 space-y-1">
+                <li><strong>Sócio / Admin</strong> — gerenciam equipe e têm acesso total</li>
+                <li><strong>Advogado</strong> — acesso completo, sem gestão de equipe</li>
+                <li><strong>Estagiário</strong> — acesso limitado de leitura</li>
+              </ul>
+            </div>
+          )}
         </div>
       </div>
     </div>
