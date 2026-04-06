@@ -1,6 +1,8 @@
 import { getAuthContext } from '@/lib/auth'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { criarMovimentacaoFinanceira, criarHonorario, registrarPagamento } from '@/lib/actions/financeiro'
+import { criarMovimentacaoFinanceira, registrarPagamento } from '@/lib/actions/financeiro'
+import { HonorarioForm } from '@/components/financeiro/HonorarioForm'
 import {
   DollarSign, TrendingUp, TrendingDown, Plus,
   ArrowUpCircle, ArrowDownCircle, FileText, CreditCard,
@@ -22,7 +24,6 @@ export default async function FinanceiroPage() {
     { data: movimentacoes },
     { data: honorarios },
     { data: processos },
-    { data: clientes },
   ] = await Promise.all([
     supabase
       .from('movimentacoes_financeiras')
@@ -47,12 +48,6 @@ export default async function FinanceiroPage() {
       .eq('escritorio_id', escritorioId)
       .eq('status', 'ativo')
       .order('numero_cnj'),
-
-    supabase
-      .from('clientes')
-      .select('id, nome')
-      .eq('escritorio_id', escritorioId)
-      .order('nome'),
   ])
 
   const inicioMes = new Date()
@@ -83,10 +78,6 @@ export default async function FinanceiroPage() {
     'use server'
     await criarMovimentacaoFinanceira(formData)
   }
-  async function novoHonorario(formData: FormData) {
-    'use server'
-    await criarHonorario(formData)
-  }
   async function novoPagamento(formData: FormData) {
     'use server'
     await registrarPagamento(formData)
@@ -99,6 +90,12 @@ export default async function FinanceiroPage() {
           <h1 className="text-xl md:text-2xl font-bold text-slate-900">Financeiro</h1>
           <p className="text-slate-500 text-sm mt-1">Honorários, pagamentos e fluxo de caixa</p>
         </div>
+        <Link
+          href="/financeiro/relatorio"
+          className="px-3 py-2 text-sm font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+        >
+          Relatório
+        </Link>
       </div>
 
       {/* Cards de resumo */}
@@ -137,61 +134,7 @@ export default async function FinanceiroPage() {
         {/* Formulário novo honorário */}
         <div className="px-5 py-4 bg-slate-50 border-b border-slate-100">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Novo Honorário</p>
-          <form action={novoHonorario} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Processo *</label>
-              <select
-                name="processo_id"
-                required
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400 bg-white"
-              >
-                <option value="">Selecionar...</option>
-                {processos?.map(p => <option key={p.id} value={p.id}>{p.numero_cnj}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Tipo *</label>
-              <select
-                name="tipo"
-                required
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400 bg-white"
-              >
-                <option value="pro_labore">Pró-labore</option>
-                <option value="exito">Êxito</option>
-                <option value="parcelado">Parcelado</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Valor total (R$) *</label>
-              <input
-                name="valor_total"
-                type="number"
-                step="0.01"
-                min="0.01"
-                required
-                placeholder="0,00"
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Parcelas</label>
-              <div className="flex gap-2">
-                <input
-                  name="numero_parcelas"
-                  type="number"
-                  min="1"
-                  defaultValue="1"
-                  className="w-20 px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400"
-                />
-                <button
-                  type="submit"
-                  className="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold py-2 px-3 rounded-lg transition-colors text-sm"
-                >
-                  <Plus className="w-4 h-4 mx-auto" />
-                </button>
-              </div>
-            </div>
-          </form>
+          <HonorarioForm processos={(processos ?? []) as any} />
         </div>
 
         {/* Lista de honorários */}

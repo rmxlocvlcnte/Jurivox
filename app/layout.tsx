@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Geist } from 'next/font/google'
 import { ClerkProvider } from '@clerk/nextjs'
 import { ptBR } from '@clerk/localizations'
+import { Toaster } from '@/components/ui/sonner'
 import './globals.css'
 
 const geist = Geist({
@@ -46,6 +47,7 @@ export default function RootLayout({
         </head>
         <body className={`${geist.variable} font-sans antialiased`}>
           {children}
+          <Toaster />
         </body>
       </html>
     </ClerkProvider>

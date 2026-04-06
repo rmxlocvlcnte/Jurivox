@@ -3,15 +3,19 @@
 import { getAuthContext } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import { exigirCargo, CARGOS_FINANCEIRO } from '@/lib/permissoes'
 
 // ---- ENVIAR CONVITE ----
 export async function enviarConvite(formData: FormData) {
-  const { escritorioId, supabase } = await getAuthContext()
+  const { escritorioId, cargo, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/sign-in')
+
+  const perm = exigirCargo(cargo, CARGOS_FINANCEIRO, 'Sem permissão para convidar membros.')
+  if (perm) return perm
 
   const nomeConvidado = (formData.get('nome') as string)?.trim()
   const emailConvidado = (formData.get('email') as string)?.trim()
-  const cargo = (formData.get('cargo') as string) || 'advogado'
+  const cargoNovo = (formData.get('cargo') as string) || 'advogado'
 
   if (!nomeConvidado || !emailConvidado) return { erro: 'Nome e e-mail são obrigatórios.' }
 
@@ -38,7 +42,7 @@ export async function enviarConvite(formData: FormData) {
           <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
             <h2 style="color: #0d1b3e;">Você foi convidado para o JurisFlow</h2>
             <p>Olá, <strong>${nomeConvidado}</strong>!</p>
-            <p>Você recebeu um convite para acessar o escritório <strong>${escritorio?.nome ?? ''}</strong> no JurisFlow como <strong>${cargo}</strong>.</p>
+            <p>Você recebeu um convite para acessar o escritório <strong>${escritorio?.nome ?? ''}</strong> no JurisFlow como <strong>${cargoNovo}</strong>.</p>
             <p>Clique no botão abaixo para criar sua conta:</p>
             <a href="${appUrl}/sign-up" style="display:inline-block; background:#f59e0b; color:#000; font-weight:bold; padding:12px 24px; border-radius:8px; text-decoration:none; margin:16px 0;">
               Criar minha conta →
@@ -61,12 +65,10 @@ export async function removerMembro(membroId: string) {
   const { escritorioId, membroId: meuId, cargo, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/sign-in')
 
-  // Apenas sócios e admins podem remover membros
   if (cargo !== 'socio' && cargo !== 'admin') {
     return { erro: 'Sem permissão para remover membros.' }
   }
 
-  // Não pode remover a si mesmo
   if (membroId === meuId) {
     return { erro: 'Você não pode remover a si mesmo.' }
   }

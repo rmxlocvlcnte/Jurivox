@@ -180,7 +180,15 @@ export default async function DashboardPage() {
     }
   })
 
-  const dadosGrafico = Object.entries(meses).map(([mes, areas]) => ({ mes, ...areas }))
+  const dadosGrafico = Object.entries(meses).map(([mes, areas]) => ({
+    mes,
+    civil: areas.civil ?? 0,
+    criminal: areas.criminal ?? 0,
+    trabalhista: areas.trabalhista ?? 0,
+    tributario: areas.tributario ?? 0,
+    previdenciario: areas.previdenciario ?? 0,
+    outro: areas.outro ?? 0,
+  }))
 
   const cards = [
     { label: 'Processos Ativos', valor: totalProcessos ?? 0, icon: FolderOpen, cor: 'text-blue-600', fundo: 'bg-blue-50' },

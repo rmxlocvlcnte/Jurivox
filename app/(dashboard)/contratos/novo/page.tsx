@@ -14,6 +14,11 @@ export default async function NovoContratoPage() {
     supabase.from('membros_escritorio').select('id, nome').eq('escritorio_id', escritorioId).order('nome'),
   ])
 
+  async function handleCriarContrato(formData: FormData) {
+    'use server'
+    await criarContrato(formData)
+  }
+
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
@@ -26,7 +31,7 @@ export default async function NovoContratoPage() {
         </div>
       </div>
 
-      <form action={criarContrato} className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-5">
+      <form action={handleCriarContrato} className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-5">
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1.5">Nome do contrato *</label>
           <input

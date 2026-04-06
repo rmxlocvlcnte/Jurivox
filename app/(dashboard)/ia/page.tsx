@@ -3,33 +3,36 @@
 // -----------------------------------------------
 // ASSISTENTE IA — Chat jurídico com DeepSeek R1
 // -----------------------------------------------
-// Esta tela é um chat onde o advogado pode:
-// 1. Fazer perguntas jurídicas gerais
-// 2. Pedir para analisar as movimentações de um processo
-//    (quando vem do botão "Analisar com IA" no processo)
-//
-// useChat: hook do Vercel AI SDK que gerencia o histórico
-// de mensagens e a comunicação com a API /api/chat
+// useChat v4+ API:
+// - sendMessage({ text }) para enviar mensagem
+// - status: 'ready' | 'submitted' | 'streaming' | 'error'
+// - messages[].parts — array de partes (TextUIPart, etc.)
 // -----------------------------------------------
 
 import { useChat } from '@ai-sdk/react'
+import { DefaultChatTransport } from 'ai'
 import { useSearchParams } from 'next/navigation'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Bot, User, Send, Loader2, Scale, Trash2 } from 'lucide-react'
+
+function getMessageText(parts: { type: string; text?: string }[]): string {
+  return parts
+    .filter(p => p.type === 'text')
+    .map(p => p.text ?? '')
+    .join('')
+}
 
 export default function IAPage() {
   const searchParams = useSearchParams()
   const processoId = searchParams.get('processo_id')
+  const [input, setInput] = useState('')
+  const autoEnviado = useRef(false)
 
-  // useChat gerencia todo o estado do chat automaticamente:
-  // - messages: histórico de mensagens
-  // - input: texto que o usuário está digitando
-  // - handleSubmit: envia a mensagem e faz streaming da resposta
-  // - isLoading: true enquanto a IA está gerando a resposta
-  const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages } = useChat({
-    api: '/api/chat',
+  const { messages, sendMessage, status, setMessages } = useChat({
+    transport: new DefaultChatTransport({ api: '/api/chat' }),
   })
 
+  const isLoading = status === 'submitted' || status === 'streaming'
   const mensagensRef = useRef<HTMLDivElement>(null)
 
   // Rola para a última mensagem automaticamente
@@ -41,28 +44,28 @@ export default function IAPage() {
 
   // Se veio de um processo, carrega as movimentações automaticamente
   useEffect(() => {
-    if (processoId && messages.length === 0) {
+    if (processoId && !autoEnviado.current) {
+      autoEnviado.current = true
       fetch(`/api/processos/${processoId}/movimentacoes`)
         .then(r => r.json())
         .then(data => {
           if (data.resumo) {
-            // Injeta uma mensagem automática pedindo análise
-            setMessages([{
-              id: 'inicial',
-              role: 'user',
-              content: `Por favor, analise as movimentações deste processo jurídico e me dê um resumo detalhado com sua avaliação:\n\n${data.resumo}`,
-            }])
-            // Submete automaticamente (simula clique no enviar)
-            setTimeout(() => {
-              document.getElementById('form-chat')?.dispatchEvent(
-                new Event('submit', { cancelable: true, bubbles: true })
-              )
-            }, 100)
+            sendMessage({
+              text: `Por favor, analise as movimentações deste processo jurídico e me dê um resumo detalhado com sua avaliação:\n\n${data.resumo}`,
+            })
           }
         })
         .catch(() => {})
     }
   }, [processoId])
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    const texto = input.trim()
+    if (!texto || isLoading) return
+    sendMessage({ text: texto })
+    setInput('')
+  }
 
   function limparConversa() {
     setMessages([])
@@ -117,9 +120,7 @@ export default function IAPage() {
               ].map((sugestao) => (
                 <button
                   key={sugestao}
-                  onClick={() => {
-                    handleInputChange({ target: { value: sugestao } } as any)
-                  }}
+                  onClick={() => setInput(sugestao)}
                   className="text-left text-xs bg-slate-50 hover:bg-amber-50 border border-slate-200 hover:border-amber-200 text-slate-700 px-3 py-2.5 rounded-lg transition-colors"
                 >
                   {sugestao}
@@ -130,34 +131,37 @@ export default function IAPage() {
         )}
 
         {/* Histórico de mensagens */}
-        {messages.map((m) => (
-          <div
-            key={m.id}
-            className={`flex gap-3 ${m.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
-          >
-            {/* Avatar */}
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-              m.role === 'user' ? 'bg-amber-500' : 'bg-slate-800'
-            }`}>
-              {m.role === 'user'
-                ? <User className="w-4 h-4 text-slate-900" />
-                : <Bot className="w-4 h-4 text-white" />
-              }
-            </div>
+        {messages.map((m) => {
+          const texto = getMessageText(m.parts as { type: string; text?: string }[])
+          if (!texto) return null
+          return (
+            <div
+              key={m.id}
+              className={`flex gap-3 ${m.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
+            >
+              {/* Avatar */}
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                m.role === 'user' ? 'bg-amber-500' : 'bg-slate-800'
+              }`}>
+                {m.role === 'user'
+                  ? <User className="w-4 h-4 text-slate-900" />
+                  : <Bot className="w-4 h-4 text-white" />
+                }
+              </div>
 
-            {/* Bolha de mensagem */}
-            <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm ${
-              m.role === 'user'
-                ? 'bg-amber-500 text-slate-900 rounded-tr-sm'
-                : 'bg-slate-100 text-slate-800 rounded-tl-sm'
-            }`}>
-              {/* Renderiza o texto com suporte a quebras de linha */}
-              <p className="whitespace-pre-wrap leading-relaxed">{m.content}</p>
+              {/* Bolha de mensagem */}
+              <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm ${
+                m.role === 'user'
+                  ? 'bg-amber-500 text-slate-900 rounded-tr-sm'
+                  : 'bg-slate-100 text-slate-800 rounded-tl-sm'
+              }`}>
+                <p className="whitespace-pre-wrap leading-relaxed">{texto}</p>
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
 
-        {/* Indicador de carregamento (IA gerando resposta) */}
+        {/* Indicador de carregamento */}
         {isLoading && (
           <div className="flex gap-3">
             <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center shrink-0">
@@ -172,14 +176,10 @@ export default function IAPage() {
       </div>
 
       {/* Input de mensagem */}
-      <form
-        id="form-chat"
-        onSubmit={handleSubmit}
-        className="flex gap-3"
-      >
+      <form onSubmit={handleSubmit} className="flex gap-3">
         <input
           value={input}
-          onChange={handleInputChange}
+          onChange={e => setInput(e.target.value)}
           placeholder="Digite sua pergunta jurídica..."
           disabled={isLoading}
           className="flex-1 px-4 py-3 text-sm border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent bg-white disabled:opacity-50"

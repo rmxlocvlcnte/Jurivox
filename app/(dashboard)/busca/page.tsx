@@ -1,16 +1,16 @@
 // -----------------------------------------------
-// BUSCA GLOBAL — Pesquisa processos e clientes
-// -----------------------------------------------
-// O advogado pode buscar por:
-// - Nome do cliente
-// - Número CNJ do processo
-// - CPF do cliente
+// BUSCA GLOBAL — Pesquisa processos, clientes, prazos, contratos e agenda
 // -----------------------------------------------
 
 import { getAuthContext } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Search, FolderOpen, Users, ChevronRight } from 'lucide-react'
+import { Search, FolderOpen, Users, ChevronRight, Clock, FileText, Calendar } from 'lucide-react'
+
+function formatarData(data: string) {
+  const d = data.includes('T') ? new Date(data) : new Date(data + 'T12:00:00')
+  return d.toLocaleDateString('pt-BR')
+}
 
 export default async function BuscaPage({
   searchParams,
@@ -25,10 +25,12 @@ export default async function BuscaPage({
 
   let processos: any[] = []
   let clientes: any[] = []
+  let prazos: any[] = []
+  let contratos: any[] = []
+  let eventos: any[] = []
 
   if (termo.length >= 2) {
-    // Busca processos por número CNJ ou tribunal
-    const [{ data: p }, { data: c }] = await Promise.all([
+    const [{ data: p }, { data: c }, { data: pr }, { data: ct }, { data: ag }] = await Promise.all([
       supabase
         .from('processos')
         .select('id, numero_cnj, tribunal, area_juridica, status, clientes(nome)')
@@ -42,13 +44,37 @@ export default async function BuscaPage({
         .eq('escritorio_id', escritorioId)
         .or(`nome.ilike.%${termo}%,cpf.ilike.%${termo}%,email.ilike.%${termo}%`)
         .limit(10),
+
+      supabase
+        .from('prazos')
+        .select('id, descricao, data_vencimento, concluido, processos(id, numero_cnj, clientes(nome))')
+        .eq('escritorio_id', escritorioId)
+        .ilike('descricao', `%${termo}%`)
+        .limit(10),
+
+      supabase
+        .from('contratos')
+        .select('id, nome, tipo, status, clientes(nome), processos(numero_cnj)')
+        .eq('escritorio_id', escritorioId)
+        .ilike('nome', `%${termo}%`)
+        .limit(10),
+
+      supabase
+        .from('agenda_eventos')
+        .select('id, titulo, tipo, data_inicio, dia_todo, processos(numero_cnj)')
+        .eq('escritorio_id', escritorioId)
+        .or(`titulo.ilike.%${termo}%,descricao.ilike.%${termo}%`)
+        .limit(10),
     ])
 
     processos = p ?? []
     clientes = c ?? []
+    prazos = pr ?? []
+    contratos = ct ?? []
+    eventos = ag ?? []
   }
 
-  const totalResultados = processos.length + clientes.length
+  const totalResultados = processos.length + clientes.length + prazos.length + contratos.length + eventos.length
   const LABEL_AREA: Record<string, string> = {
     civil: 'Cível', criminal: 'Criminal', trabalhista: 'Trabalhista',
     previdenciario: 'Previdenciário', tributario: 'Tributário', outro: 'Outro',
@@ -59,7 +85,7 @@ export default async function BuscaPage({
       {/* Cabeçalho */}
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Busca Global</h1>
-        <p className="text-slate-500 text-sm mt-1">Pesquise processos e clientes por nome, CPF ou número CNJ</p>
+        <p className="text-slate-500 text-sm mt-1">Pesquise processos, clientes, prazos, contratos e eventos</p>
       </div>
 
       {/* Formulário de busca */}
@@ -162,6 +188,95 @@ export default async function BuscaPage({
                   <p className="text-sm font-medium text-slate-900">{c.nome}</p>
                   <p className="text-xs text-slate-500 mt-0.5">
                     {[c.cpf && `CPF: ${c.cpf}`, c.telefone, c.email].filter(Boolean).join(' · ')}
+                  </p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Resultados de prazos */}
+      {prazos.length > 0 && (
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="px-5 py-3 bg-slate-50 border-b border-slate-100 flex items-center gap-2">
+            <Clock className="w-4 h-4 text-slate-500" />
+            <h2 className="text-sm font-semibold text-slate-700">Prazos ({prazos.length})</h2>
+          </div>
+          <div className="divide-y divide-slate-100">
+            {prazos.map((p) => {
+              const processo = p.processos as any
+              const cliente = processo?.clientes as any
+              return (
+                <Link
+                  key={p.id}
+                  href={`/prazos/${p.id}`}
+                  className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 transition-colors"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-900">{p.descricao}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {processo?.numero_cnj ?? 'Sem processo'}
+                      {cliente?.nome && ` · ${cliente.nome}`}
+                      {` · Vence em ${formatarData(p.data_vencimento)}`}
+                    </p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Resultados de contratos */}
+      {contratos.length > 0 && (
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="px-5 py-3 bg-slate-50 border-b border-slate-100 flex items-center gap-2">
+            <FileText className="w-4 h-4 text-slate-500" />
+            <h2 className="text-sm font-semibold text-slate-700">Contratos ({contratos.length})</h2>
+          </div>
+          <div className="divide-y divide-slate-100">
+            {contratos.map((c) => (
+              <Link
+                key={c.id}
+                href={`/contratos/${c.id}`}
+                className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 transition-colors"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-900">{c.nome}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {(c.clientes as any)?.nome ?? 'Sem cliente'}
+                    {(c.processos as any)?.numero_cnj && ` · ${(c.processos as any)?.numero_cnj}`}
+                  </p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Resultados da agenda */}
+      {eventos.length > 0 && (
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="px-5 py-3 bg-slate-50 border-b border-slate-100 flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-slate-500" />
+            <h2 className="text-sm font-semibold text-slate-700">Agenda ({eventos.length})</h2>
+          </div>
+          <div className="divide-y divide-slate-100">
+            {eventos.map((e) => (
+              <Link
+                key={e.id}
+                href={`/agenda/${e.id}/editar`}
+                className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 transition-colors"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-900">{e.titulo}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {(e.processos as any)?.numero_cnj ?? 'Sem processo'}
+                    {` · ${formatarData(e.data_inicio)}`}
                   </p>
                 </div>
                 <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />

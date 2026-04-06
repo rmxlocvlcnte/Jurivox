@@ -2,7 +2,7 @@ import { getAuthContext } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { concluirEvento, excluirEvento, criarEvento } from '@/lib/actions/agenda'
 import Link from 'next/link'
-import { Calendar, Plus, CheckCircle2, Trash2, Clock, Users, Scale, FileText, AlertCircle } from 'lucide-react'
+import { Calendar, Plus, CheckCircle2, Trash2, Clock, Users, Scale, FileText, AlertCircle, Pencil } from 'lucide-react'
 
 const TIPO_CONFIG: Record<string, { label: string; cls: string; icon: any }> = {
   audiencia: { label: 'Audiência', cls: 'bg-red-100 text-red-700 border-red-200', icon: Scale },
@@ -61,6 +61,11 @@ export default async function AgendaPage() {
       .eq('status', 'ativo')
       .order('numero_cnj'),
   ])
+
+  async function handleCriarEvento(formData: FormData) {
+    'use server'
+    await criarEvento(formData)
+  }
 
   const pendentes = eventos?.filter(e => !e.concluido && !isPassado(e.data_inicio)) ?? []
   const atrasados = eventos?.filter(e => !e.concluido && isPassado(e.data_inicio)) ?? []
@@ -129,6 +134,13 @@ export default async function AgendaPage() {
         </div>
         {!e.concluido && (
           <div className="flex gap-1 shrink-0">
+            <Link
+              href={`/agenda/${e.id}/editar`}
+              className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+              title="Editar"
+            >
+              <Pencil className="w-4 h-4" />
+            </Link>
             <form action={handleConcluir}>
               <input type="hidden" name="id" value={e.id} />
               <button
@@ -185,7 +197,7 @@ export default async function AgendaPage() {
           <h2 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
             <Plus className="w-4 h-4" /> Novo Evento
           </h2>
-          <form action={criarEvento} className="space-y-3">
+          <form action={handleCriarEvento} className="space-y-3">
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Título *</label>
               <input

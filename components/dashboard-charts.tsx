@@ -71,7 +71,7 @@ export function GraficoHorasSemanais({ dados }: { dados: HorasData[] }) {
             borderRadius: '8px',
             fontSize: '12px',
           }}
-          formatter={(v: number) => [`${v}h`, 'Horas']}
+          formatter={(v) => [`${v ?? 0}h`, 'Horas']}
         />
         <Bar dataKey="horas" fill="#f59e0b" radius={[4, 4, 0, 0]} />
       </BarChart>

@@ -5,8 +5,7 @@
 import { getAuthContext } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { concluirPrazo, reabrirPrazo } from '@/lib/actions/prazos'
-import { Clock, Plus, CheckCircle, AlertTriangle, Circle } from 'lucide-react'
+import { Clock, Plus } from 'lucide-react'
 import { ListaPrazosFiltrada } from '@/components/lista-prazos-filtrada'
 
 function diasRestantes(dataVencimento: string): number {
@@ -15,26 +14,38 @@ function diasRestantes(dataVencimento: string): number {
   return Math.floor((venc.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24))
 }
 
-export default async function PrazosPage() {
+export default async function PrazosPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>
+}) {
+  const { page } = await searchParams
   const { escritorioId, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/onboarding')
 
-  const { data: prazos } = await supabase
+  const pageNum = Math.max(1, parseInt(page ?? '1', 10) || 1)
+  const pageSize = 100
+  const limit = pageNum * pageSize
+
+  const { data: prazos, count } = await supabase
     .from('prazos')
     .select(`
       id, descricao, data_inicio, data_vencimento, quantidade_dias,
       dias_uteis, concluido, concluido_em,
       processos(id, numero_cnj, tribunal, clientes(nome))
-    `)
+    `, { count: 'exact' })
     .eq('escritorio_id', escritorioId)
     .order('concluido', { ascending: true })
     .order('data_vencimento', { ascending: true })
-    .limit(500)
+    .range(0, limit - 1)
 
   const lista = prazos ?? []
   const vencidos = lista.filter(p => !p.concluido && diasRestantes(p.data_vencimento) < 0)
   const hoje = lista.filter(p => !p.concluido && diasRestantes(p.data_vencimento) === 0)
   const proximos = lista.filter(p => !p.concluido && diasRestantes(p.data_vencimento) > 0 && diasRestantes(p.data_vencimento) <= 7)
+
+  const total = count ?? lista.length
+  const carregados = lista.length
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -68,6 +79,23 @@ export default async function PrazosPage() {
         </div>
       ) : (
         <ListaPrazosFiltrada prazos={lista as any} acoesConcluir={null} acoesReabrir={null} />
+      )}
+
+      {carregados < total && (
+        <div className="flex items-center justify-center">
+          <Link
+            href={`/prazos?page=${pageNum + 1}`}
+            className="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+          >
+            Carregar mais
+          </Link>
+        </div>
+      )}
+
+      {total > 0 && (
+        <p className="text-xs text-slate-400 text-center">
+          Mostrando {carregados} de {total} prazos
+        </p>
       )}
     </div>
   )

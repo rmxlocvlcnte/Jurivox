@@ -8,15 +8,16 @@ import { getAuthContext } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
+import { exigirCargo, CARGOS_FINANCEIRO } from '@/lib/permissoes'
 
 // ---- SCHEMAS ZOD ----
 
 const HonorarioSchema = z.object({
   processo_id: z.string().uuid('Processo inválido.'),
-  tipo: z.enum(['exito', 'pro_labore', 'parcelado'], {
-    errorMap: () => ({ message: 'Tipo de honorário inválido.' }),
+  tipo: z.enum(['exito', 'pro_labore', 'parcelado'] as const, {
+    error: 'Tipo de honorário inválido.',
   }),
-  valor_total: z.number({ invalid_type_error: 'Valor deve ser um número.' })
+  valor_total: z.number('Valor deve ser um número.')
     .positive('Valor deve ser maior que zero.')
     .max(10_000_000, 'Valor muito alto.'),
   numero_parcelas: z.number().int().min(1).max(360).default(1),
@@ -25,29 +26,32 @@ const HonorarioSchema = z.object({
 
 const PagamentoSchema = z.object({
   honorario_id: z.string().uuid('Honorário inválido.'),
-  valor: z.number({ invalid_type_error: 'Valor deve ser um número.' })
+  valor: z.number('Valor deve ser um número.')
     .positive('Valor deve ser maior que zero.'),
   data_pagamento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida.'),
-  forma_pagamento: z.enum(['pix', 'transferencia', 'boleto', 'dinheiro', 'cheque', 'cartao'])
+  forma_pagamento: z.enum(['pix', 'ted', 'boleto', 'dinheiro', 'cheque', 'cartao', 'transferencia'] as const)
     .default('pix'),
   observacao: z.string().max(500).optional().nullable(),
 })
 
 const MovimentacaoSchema = z.object({
-  tipo: z.enum(['entrada', 'saida'], {
-    errorMap: () => ({ message: 'Tipo deve ser entrada ou saída.' }),
+  tipo: z.enum(['entrada', 'saida'] as const, {
+    error: 'Tipo deve ser entrada ou saída.',
   }),
-  categoria: z.string().min(1, 'Categoria obrigatória.').max(100),
+  categoria: z.string().max(100).optional().nullable(),
   descricao: z.string().min(1, 'Descrição obrigatória.').max(500),
-  valor: z.number({ invalid_type_error: 'Valor deve ser um número.' })
+  valor: z.number('Valor deve ser um número.')
     .positive('Valor deve ser maior que zero.'),
   data: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida.'),
 })
 
 // ---- CRIAR HONORÁRIO ----
 export async function criarHonorario(formData: FormData) {
-  const { escritorioId, supabase } = await getAuthContext()
+  const { escritorioId, cargo, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/sign-in')
+
+  const perm = exigirCargo(cargo, CARGOS_FINANCEIRO, 'Sem permissão para criar honorários.')
+  if (perm) return perm
 
   const parse = HonorarioSchema.safeParse({
     processo_id: formData.get('processo_id'),
@@ -58,7 +62,7 @@ export async function criarHonorario(formData: FormData) {
   })
 
   if (!parse.success) {
-    return { erro: parse.error.errors[0]?.message ?? 'Dados inválidos.' }
+    return { erro: parse.error.issues[0]?.message ?? 'Dados inválidos.' }
   }
 
   const dados = parse.data
@@ -85,13 +89,16 @@ export async function criarHonorario(formData: FormData) {
   }
 
   revalidatePath('/financeiro')
-  redirect('/financeiro')
+  return { sucesso: true }
 }
 
 // ---- REGISTRAR PAGAMENTO ----
 export async function registrarPagamento(formData: FormData) {
-  const { escritorioId, supabase } = await getAuthContext()
+  const { escritorioId, cargo, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/sign-in')
+
+  const perm = exigirCargo(cargo, CARGOS_FINANCEIRO, 'Sem permissão para registrar pagamentos.')
+  if (perm) return perm
 
   const parse = PagamentoSchema.safeParse({
     honorario_id: formData.get('honorario_id'),
@@ -102,10 +109,13 @@ export async function registrarPagamento(formData: FormData) {
   })
 
   if (!parse.success) {
-    return { erro: parse.error.errors[0]?.message ?? 'Dados inválidos.' }
+    return { erro: parse.error.issues[0]?.message ?? 'Dados inválidos.' }
   }
 
-  const dados = parse.data
+  const dados = {
+    ...parse.data,
+    forma_pagamento: parse.data.forma_pagamento === 'transferencia' ? 'ted' : parse.data.forma_pagamento,
+  }
 
   const { data: honorario } = await supabase
     .from('honorarios')
@@ -124,24 +134,27 @@ export async function registrarPagamento(formData: FormData) {
   if (error) return { erro: 'Não foi possível registrar o pagamento.' }
 
   revalidatePath('/financeiro')
-  redirect('/financeiro')
+  return { sucesso: true }
 }
 
 // ---- REGISTRAR MOVIMENTAÇÃO ----
 export async function criarMovimentacaoFinanceira(formData: FormData) {
-  const { escritorioId, supabase } = await getAuthContext()
+  const { escritorioId, cargo, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/sign-in')
+
+  const perm = exigirCargo(cargo, CARGOS_FINANCEIRO, 'Sem permissão para registrar movimentações.')
+  if (perm) return perm
 
   const parse = MovimentacaoSchema.safeParse({
     tipo: formData.get('tipo'),
-    categoria: (formData.get('categoria') as string)?.trim(),
+    categoria: (formData.get('categoria') as string)?.trim() || null,
     descricao: (formData.get('descricao') as string)?.trim(),
     valor: parseFloat(formData.get('valor') as string),
     data: formData.get('data'),
   })
 
   if (!parse.success) {
-    return { erro: parse.error.errors[0]?.message ?? 'Dados inválidos.' }
+    return { erro: parse.error.issues[0]?.message ?? 'Dados inválidos.' }
   }
 
   const { error } = await supabase.from('movimentacoes_financeiras').insert({
@@ -155,5 +168,5 @@ export async function criarMovimentacaoFinanceira(formData: FormData) {
   }
 
   revalidatePath('/financeiro')
-  redirect('/financeiro')
+  return { sucesso: true }
 }

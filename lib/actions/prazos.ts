@@ -3,27 +3,31 @@
 // -----------------------------------------------
 // PRAZOS — Criar, concluir e excluir prazos
 // -----------------------------------------------
-// Um prazo é uma data limite que o advogado precisa
-// cumprir, como: prazo para contestação, recurso, etc.
-// -----------------------------------------------
 
 import { getAuthContext } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { emailNovoPrazo } from '@/lib/notificacoes/email'
 import { whatsappNovoPrazo } from '@/lib/notificacoes/whatsapp'
+import { z } from 'zod'
+import { exigirCargo, CARGOS_OPERACIONAIS } from '@/lib/permissoes'
 
-// Calcula data de vencimento somando dias a partir da data início
-// Se dias_uteis = true, conta apenas dias de semana (seg-sex)
+const PrazoSchema = z.object({
+  processo_id: z.string().uuid('Processo inválido.'),
+  descricao: z.string().min(2, 'Descrição obrigatória.').max(500),
+  data_inicio: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida.'),
+  quantidade_dias: z.number().int().min(1, 'Quantidade inválida.').max(3650),
+  dias_uteis: z.boolean().default(true),
+})
+
 function calcularVencimento(dataInicio: string, quantidadeDias: number, diasUteis: boolean): string {
-  const inicio = new Date(dataInicio + 'T12:00:00') // Meio-dia para evitar problemas de fuso
+  const inicio = new Date(dataInicio + 'T12:00:00')
   let data = new Date(inicio)
   let diasContados = 0
 
   while (diasContados < quantidadeDias) {
     data.setDate(data.getDate() + 1)
     if (diasUteis) {
-      // Pula fins de semana (0 = domingo, 6 = sábado)
       const diaSemana = data.getDay()
       if (diaSemana !== 0 && diaSemana !== 6) {
         diasContados++
@@ -33,45 +37,51 @@ function calcularVencimento(dataInicio: string, quantidadeDias: number, diasUtei
     }
   }
 
-  return data.toISOString().split('T')[0] // Retorna só a data: "YYYY-MM-DD"
+  return data.toISOString().split('T')[0]
 }
 
 // ---- CRIAR PRAZO ----
 export async function criarPrazo(formData: FormData) {
-  const { escritorioId, supabase } = await getAuthContext()
+  const { escritorioId, cargo, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/sign-in')
 
-  const processoId = formData.get('processo_id') as string
-  const descricao = (formData.get('descricao') as string)?.trim()
-  const dataInicio = formData.get('data_inicio') as string
-  const quantidadeDias = parseInt(formData.get('quantidade_dias') as string)
-  const diasUteis = formData.get('dias_uteis') === 'true'
+  const perm = exigirCargo(cargo, CARGOS_OPERACIONAIS, 'Sem permissão para criar prazos.')
+  if (perm) return perm
 
-  if (!processoId || !descricao || !dataInicio || isNaN(quantidadeDias)) {
-    return { erro: 'Preencha todos os campos obrigatórios.' }
+  const parse = PrazoSchema.safeParse({
+    processo_id: formData.get('processo_id'),
+    descricao: (formData.get('descricao') as string)?.trim(),
+    data_inicio: formData.get('data_inicio'),
+    quantidade_dias: parseInt(formData.get('quantidade_dias') as string),
+    dias_uteis: formData.get('dias_uteis') === 'true',
+  })
+
+  if (!parse.success) {
+    return { erro: parse.error.issues[0]?.message ?? 'Dados inválidos.' }
   }
 
-  // Verifica que o processo pertence ao escritório
+  const dados = parse.data
+
   const { data: processo } = await supabase
     .from('processos')
     .select('id')
-    .eq('id', processoId)
+    .eq('id', dados.processo_id)
     .eq('escritorio_id', escritorioId)
     .single()
 
   if (!processo) return { erro: 'Processo não encontrado.' }
 
-  const dataVencimento = calcularVencimento(dataInicio, quantidadeDias, diasUteis)
+  const dataVencimento = calcularVencimento(dados.data_inicio, dados.quantidade_dias, dados.dias_uteis)
 
   const { error } = await supabase
     .from('prazos')
     .insert({
-      processo_id: processoId,
+      processo_id: dados.processo_id,
       escritorio_id: escritorioId,
-      descricao,
-      data_inicio: dataInicio,
-      quantidade_dias: quantidadeDias,
-      dias_uteis: diasUteis,
+      descricao: dados.descricao,
+      data_inicio: dados.data_inicio,
+      quantidade_dias: dados.quantidade_dias,
+      dias_uteis: dados.dias_uteis,
       data_vencimento: dataVencimento,
     })
 
@@ -80,7 +90,6 @@ export async function criarPrazo(formData: FormData) {
     return { erro: 'Não foi possível criar o prazo.' }
   }
 
-  // Busca advogado responsável para notificação
   const { data: membro } = await supabase
     .from('membros_escritorio')
     .select('nome, email, telefone')
@@ -90,7 +99,7 @@ export async function criarPrazo(formData: FormData) {
   const { data: processoData } = await supabase
     .from('processos')
     .select('numero_cnj')
-    .eq('id', processoId)
+    .eq('id', dados.processo_id)
     .single()
 
   if (membro && processoData) {
@@ -103,7 +112,7 @@ export async function criarPrazo(formData: FormData) {
         emailAdvogado: membro.email,
         nomeAdvogado: membro.nome,
         numeroCnj: processoData.numero_cnj,
-        descricao,
+        descricao: dados.descricao,
         dataVencimento,
         diasRestantes,
       }).catch(() => {})
@@ -114,7 +123,7 @@ export async function criarPrazo(formData: FormData) {
         telefoneAdvogado: membro.telefone,
         nomeAdvogado: membro.nome,
         numeroCnj: processoData.numero_cnj,
-        descricao,
+        descricao: dados.descricao,
         dataVencimento,
         diasRestantes,
       }).catch(() => {})
@@ -122,14 +131,17 @@ export async function criarPrazo(formData: FormData) {
   }
 
   revalidatePath('/prazos')
-  revalidatePath(`/processos/${processoId}`)
+  revalidatePath(`/processos/${dados.processo_id}`)
   redirect('/prazos')
 }
 
 // ---- MARCAR PRAZO COMO CONCLUÍDO ----
 export async function concluirPrazo(id: string) {
-  const { escritorioId, supabase } = await getAuthContext()
+  const { escritorioId, cargo, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/sign-in')
+
+  const perm = exigirCargo(cargo, CARGOS_OPERACIONAIS, 'Sem permissão para concluir prazos.')
+  if (perm) return perm
 
   const { error } = await supabase
     .from('prazos')
@@ -143,10 +155,13 @@ export async function concluirPrazo(id: string) {
   revalidatePath('/dashboard')
 }
 
-// ---- REABRIR PRAZO (desfazer conclusão) ----
+// ---- REABRIR PRAZO ----
 export async function reabrirPrazo(id: string) {
-  const { escritorioId, supabase } = await getAuthContext()
+  const { escritorioId, cargo, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/sign-in')
+
+  const perm = exigirCargo(cargo, CARGOS_OPERACIONAIS, 'Sem permissão para reabrir prazos.')
+  if (perm) return perm
 
   await supabase
     .from('prazos')
@@ -159,8 +174,11 @@ export async function reabrirPrazo(id: string) {
 
 // ---- EXCLUIR PRAZO ----
 export async function excluirPrazo(id: string) {
-  const { escritorioId, supabase } = await getAuthContext()
+  const { escritorioId, cargo, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/sign-in')
+
+  const perm = exigirCargo(cargo, CARGOS_OPERACIONAIS, 'Sem permissão para excluir prazos.')
+  if (perm) return perm
 
   await supabase
     .from('prazos')

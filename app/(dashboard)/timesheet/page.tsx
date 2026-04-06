@@ -1,7 +1,8 @@
 import { getAuthContext } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import { criarLancamento, excluirLancamento, duplicarLancamento } from '@/lib/actions/timesheet'
-import { Clock, Plus, Copy, Trash2, TrendingUp, Calendar } from 'lucide-react'
+import { excluirLancamento, duplicarLancamento } from '@/lib/actions/timesheet'
+import { Clock, Plus, Copy, Trash2 } from 'lucide-react'
+import { TimesheetForm } from '@/components/timesheet/TimesheetForm'
 
 function formatarHoras(h: number) {
   const horas = Math.floor(h)
@@ -142,79 +143,7 @@ export default async function TimesheetPage({
           <h2 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
             <Plus className="w-4 h-4" /> Novo Lançamento
           </h2>
-          <form action={criarLancamento} className="space-y-3">
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Data *</label>
-                <input
-                  name="data"
-                  type="date"
-                  required
-                  defaultValue={new Date().toISOString().split('T')[0]}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Horas *</label>
-                <input
-                  name="horas"
-                  type="number"
-                  step="0.25"
-                  min="0.25"
-                  max="24"
-                  required
-                  placeholder="1.0"
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Descrição *</label>
-              <textarea
-                name="descricao"
-                required
-                rows={3}
-                placeholder="O que foi feito..."
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400 resize-none"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Tipo</label>
-              <select
-                name="tipo"
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400 bg-white"
-              >
-                <option value="produtivo">Produtivo</option>
-                <option value="nao_produtivo">Não Produtivo</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Contrato</label>
-              <select
-                name="contrato_id"
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400 bg-white"
-              >
-                <option value="">Nenhum</option>
-                {contratos?.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Processo</label>
-              <select
-                name="processo_id"
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400 bg-white"
-              >
-                <option value="">Nenhum</option>
-                {processos?.map(p => <option key={p.id} value={p.id}>{p.numero_cnj}</option>)}
-              </select>
-            </div>
-            <button
-              type="submit"
-              className="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold py-2.5 rounded-lg transition-colors text-sm"
-            >
-              Registrar horas
-            </button>
-          </form>
+          <TimesheetForm contratos={(contratos ?? []) as any} processos={(processos ?? []) as any} />
         </div>
 
         {/* Lista de lançamentos */}

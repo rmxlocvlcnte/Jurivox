@@ -1,27 +1,73 @@
 import { streamText } from "ai";
 import { legalModel } from "@/lib/ai";
 import { auth } from "@clerk/nextjs/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const maxDuration = 60;
 
-// Rate limiting simples em memória: userId → { count, windowStart }
-const rateLimitMap = new Map<string, { count: number; windowStart: number }>();
-const WINDOW_MS = 60_000;   // janela de 1 minuto
-const MAX_REQUESTS = 15;    // máx 15 requisições por minuto por usuário
+const WINDOW_MS = 60_000;
+const MAX_REQUESTS = 15;
 
-function checkRateLimit(userId: string): boolean {
+async function checkRateLimit(userId: string): Promise<boolean> {
+  const supabase = createAdminClient();
   const now = Date.now();
-  const entry = rateLimitMap.get(userId);
 
-  if (!entry || now - entry.windowStart > WINDOW_MS) {
-    rateLimitMap.set(userId, { count: 1, windowStart: now });
+  const { data, error } = await supabase
+    .from('rate_limits')
+    .select('id, count, window_start')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error('[RateLimit] erro ao consultar:', error.message);
     return true;
   }
 
-  if (entry.count >= MAX_REQUESTS) return false;
+  if (!data) {
+    await supabase.from('rate_limits').insert({
+      user_id: userId,
+      count: 1,
+      window_start: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+    return true;
+  }
 
-  entry.count++;
+  const windowStart = new Date(data.window_start).getTime();
+  if (now - windowStart > WINDOW_MS) {
+    await supabase
+      .from('rate_limits')
+      .update({ count: 1, window_start: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .eq('id', data.id);
+    return true;
+  }
+
+  if (data.count >= MAX_REQUESTS) return false;
+
+  await supabase
+    .from('rate_limits')
+    .update({ count: data.count + 1, updated_at: new Date().toISOString() })
+    .eq('id', data.id);
+
   return true;
+}
+
+/** Normaliza mensagens dos formatos antigo ({ role, content }) e novo ({ role, parts }) */
+function normalizarMensagens(mensagens: any[]): { role: string; content: string }[] {
+  return mensagens.map((m: any) => {
+    if (typeof m.content === 'string') {
+      // Formato antigo
+      return { role: m.role, content: m.content.slice(0, 8000) }
+    }
+    // Formato novo (UIMessage com parts)
+    const texto = Array.isArray(m.parts)
+      ? m.parts
+          .filter((p: any) => p.type === 'text')
+          .map((p: any) => p.text ?? '')
+          .join('')
+      : ''
+    return { role: m.role, content: texto.slice(0, 8000) }
+  })
 }
 
 export async function POST(req: Request) {
@@ -30,8 +76,7 @@ export async function POST(req: Request) {
     return new Response("Não autorizado", { status: 401 });
   }
 
-  // Rate limiting
-  if (!checkRateLimit(userId)) {
+  if (!(await checkRateLimit(userId))) {
     return new Response(
       JSON.stringify({ error: "Muitas requisições. Aguarde um momento." }),
       { status: 429, headers: { "Content-Type": "application/json" } }
@@ -40,25 +85,17 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const messages = body?.messages;
+    const mensagensRaw = body?.messages;
 
-    if (!Array.isArray(messages) || messages.length === 0) {
+    if (!Array.isArray(mensagensRaw) || mensagensRaw.length === 0) {
       return new Response("Mensagens inválidas", { status: 400 });
     }
 
-    // Limita histórico (máx 30 mensagens) e tamanho de cada mensagem (máx 8000 chars)
-    const messagesLimitados = messages
-      .slice(-30)
-      .map((m: any) => ({
-        ...m,
-        content: typeof m.content === "string"
-          ? m.content.slice(0, 8000)
-          : m.content,
-      }));
+    const messages = normalizarMensagens(mensagensRaw.slice(-30)) as any[];
 
     const result = await streamText({
       model: legalModel,
-      messages: messagesLimitados,
+      messages,
       system: `Você é um Desembargador Brasileiro Sênior.
             Sua linguagem deve ser formal, técnica e baseada no CPC/2015 e na Constituição Federal.
             Ao analisar textos:
@@ -68,7 +105,7 @@ export async function POST(req: Request) {
             Nunca invente números de processos ou leis que não existem.`,
     });
 
-    return (result as any).toDataStreamResponse();
+    return result.toUIMessageStreamResponse();
   } catch (error) {
     console.error("Erro na rota do chat:", error);
     return new Response("Erro interno", { status: 500 });

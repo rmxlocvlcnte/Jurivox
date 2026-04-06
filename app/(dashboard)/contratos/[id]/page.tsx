@@ -1,8 +1,8 @@
 import { getAuthContext } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import { excluirContrato } from '@/lib/actions/contratos'
 import Link from 'next/link'
-import { ArrowLeft, FileText, User, Calendar, DollarSign, Trash2, Edit2 } from 'lucide-react'
+import { ArrowLeft, FileText, User, Calendar, DollarSign } from 'lucide-react'
+import { ContratoActions } from '@/components/contratos/ContratoActions'
 
 function formatarMoeda(v: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
@@ -15,6 +15,7 @@ function formatarData(d: string) {
 const TIPO_LABEL: Record<string, string> = {
   fixo: 'Fixo',
   hora: 'Por Hora',
+  por_hora: 'Por Hora',
   exito: 'Êxito',
   misto: 'Misto',
 }
@@ -43,11 +44,6 @@ export default async function ContratoDetalhePage({ params }: { params: Promise<
     .single()
 
   if (!contrato) redirect('/contratos')
-
-  async function handleExcluir() {
-    'use server'
-    await excluirContrato(id)
-  }
 
   const valor = contrato.tipo === 'fixo' ? (contrato.valor_fixo ? formatarMoeda(contrato.valor_fixo) : '—')
     : contrato.tipo === 'hora' ? (contrato.valor_hora ? `${formatarMoeda(contrato.valor_hora)}/h` : '—')
@@ -148,18 +144,7 @@ export default async function ContratoDetalhePage({ params }: { params: Promise<
       </div>
 
       {/* Ações */}
-      <div className="flex gap-3">
-        <form action={handleExcluir} className="flex-1">
-          <button
-            type="submit"
-            className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
-            onClick={(e) => { if (!confirm('Excluir este contrato?')) e.preventDefault() }}
-          >
-            <Trash2 className="w-4 h-4" />
-            Excluir
-          </button>
-        </form>
-      </div>
+      <ContratoActions id={id} />
     </div>
   )
 }

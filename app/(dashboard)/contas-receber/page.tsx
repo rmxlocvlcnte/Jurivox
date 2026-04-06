@@ -1,39 +1,39 @@
 import { getAuthContext } from '@/lib/auth'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import { criarConta, registrarRecebimento, cancelarConta } from '@/lib/actions/contas_receber'
-import { DollarSign, Plus, CheckCircle2, XCircle, AlertCircle, Clock } from 'lucide-react'
+import { Plus } from 'lucide-react'
+import { ListaContasReceberFiltrada } from '@/components/lista-contas-receber-filtrada'
 
 function formatarMoeda(v: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
 }
 
-function formatarData(d: string) {
-  return new Date(d + 'T12:00:00').toLocaleDateString('pt-BR')
-}
-
-const STATUS_CONFIG: Record<string, { label: string; cls: string; icon: any }> = {
-  aberto: { label: 'Em Aberto', cls: 'bg-blue-100 text-blue-700', icon: Clock },
-  recebido: { label: 'Recebido', cls: 'bg-green-100 text-green-700', icon: CheckCircle2 },
-  vencido: { label: 'Vencido', cls: 'bg-red-100 text-red-700', icon: AlertCircle },
-  cancelado: { label: 'Cancelado', cls: 'bg-slate-100 text-slate-500', icon: XCircle },
-}
-
-export default async function ContasReceberPage() {
+export default async function ContasReceberPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>
+}) {
+  const { page } = await searchParams
   const { escritorioId, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/onboarding')
 
   const hoje = new Date().toISOString().split('T')[0]
+  const pageNum = Math.max(1, parseInt(page ?? '1', 10) || 1)
+  const pageSize = 50
+  const limit = pageNum * pageSize
 
-  const [{ data: contas }, { data: clientes }] = await Promise.all([
+  const [{ data: contas, count }, { data: clientes }] = await Promise.all([
     supabase
       .from('contas_receber')
       .select(`
         id, descricao, valor, data_emissao, data_vencimento, data_recebimento,
         status, forma_recebimento, observacoes, criado_em,
         clientes(nome)
-      `)
+      `, { count: 'exact' })
       .eq('escritorio_id', escritorioId)
-      .order('data_vencimento', { ascending: true }),
+      .order('data_vencimento', { ascending: true })
+      .range(0, limit - 1),
 
     supabase.from('clientes').select('id, nome').eq('escritorio_id', escritorioId).order('nome'),
   ])
@@ -62,6 +62,9 @@ export default async function ContasReceberPage() {
     const id = formData.get('id') as string
     await cancelarConta(id)
   }
+
+  const total = count ?? contasComStatus.length
+  const carregados = contasComStatus.length
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
@@ -158,76 +161,33 @@ export default async function ContasReceberPage() {
           </form>
         </div>
 
-        {/* Lista de contas */}
-        <div className="xl:col-span-3 bg-white rounded-xl border border-slate-200 shadow-sm">
-          <div className="px-5 py-4 border-b border-slate-100">
-            <h2 className="font-semibold text-slate-900 flex items-center gap-2">
-              <DollarSign className="w-4 h-4 text-slate-400" />
-              Cobranças
-            </h2>
-          </div>
-          <div className="divide-y divide-slate-100">
-            {!contasComStatus.length ? (
-              <div className="px-5 py-10 text-center">
-                <DollarSign className="w-10 h-10 text-slate-200 mx-auto mb-3" />
-                <p className="text-slate-400 text-sm">Nenhuma cobrança cadastrada.</p>
-              </div>
-            ) : (
-              contasComStatus.map((c) => {
-                const cfg = STATUS_CONFIG[c.status] ?? STATUS_CONFIG.aberto
-                const Icon = cfg.icon
-                return (
-                  <div key={c.id} className="px-5 py-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-semibold text-slate-900 truncate">{c.descricao}</p>
-                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0 ${cfg.cls}`}>
-                            <Icon className="w-3 h-3" />
-                            {cfg.label}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-400 mt-0.5">
-                          {(c.clientes as any)?.nome && `${(c.clientes as any).nome} · `}
-                          Vence: {formatarData(c.data_vencimento)}
-                          {c.data_recebimento && ` · Recebido: ${formatarData(c.data_recebimento)}`}
-                        </p>
-                        {c.observacoes && <p className="text-xs text-slate-400 mt-0.5">{c.observacoes}</p>}
-                      </div>
-                      <p className="text-base font-bold text-slate-900 shrink-0">{formatarMoeda(c.valor)}</p>
-                    </div>
-
-                    {(c.status === 'aberto' || c.status === 'vencido') && (
-                      <div className="flex gap-2 mt-3">
-                        <form action={handleReceber} className="flex-1">
-                          <input type="hidden" name="id" value={c.id} />
-                          <input type="hidden" name="data_recebimento" value={hoje} />
-                          <input type="hidden" name="forma_recebimento" value="pix" />
-                          <button
-                            type="submit"
-                            className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
-                          >
-                            <CheckCircle2 className="w-3.5 h-3.5" /> Marcar recebido
-                          </button>
-                        </form>
-                        <form action={handleCancelar}>
-                          <input type="hidden" name="id" value={c.id} />
-                          <button
-                            type="submit"
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-500 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors"
-                          >
-                            <XCircle className="w-3.5 h-3.5" /> Cancelar
-                          </button>
-                        </form>
-                      </div>
-                    )}
-                  </div>
-                )
-              })
-            )}
-          </div>
+        {/* Lista de contas com filtros */}
+        <div className="xl:col-span-3">
+          <ListaContasReceberFiltrada
+            contas={contasComStatus as any}
+            hoje={hoje}
+            onReceber={handleReceber}
+            onCancelar={handleCancelar}
+          />
         </div>
       </div>
+
+      {carregados < total && (
+        <div className="flex items-center justify-center">
+          <Link
+            href={`/contas-receber?page=${pageNum + 1}`}
+            className="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+          >
+            Carregar mais
+          </Link>
+        </div>
+      )}
+
+      {total > 0 && (
+        <p className="text-xs text-slate-400 text-center">
+          Mostrando {carregados} de {total} cobranças
+        </p>
+      )}
     </div>
   )
 }

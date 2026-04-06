@@ -113,7 +113,6 @@ export function Header() {
         <NotificacoesBell />
 
         <UserButton
-          afterSignOutUrl="/sign-in"
           appearance={{
             elements: {
               avatarBox: 'w-9 h-9 ring-2 ring-amber-400/30',

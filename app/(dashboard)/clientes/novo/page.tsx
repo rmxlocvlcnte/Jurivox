@@ -9,7 +9,12 @@ import { ChevronLeft } from 'lucide-react'
 const inputCls = 'w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent'
 const labelCls = 'block text-sm font-medium text-slate-700 mb-1'
 
-export default function NovoClientePage() {
+export default async function NovoClientePage() {
+  async function handleCriarCliente(formData: FormData) {
+    'use server'
+    await criarCliente(formData)
+  }
+
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Breadcrumb */}
@@ -24,7 +29,7 @@ export default function NovoClientePage() {
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
         <h1 className="text-xl font-bold text-slate-900 mb-6">Cadastrar Novo Cliente</h1>
 
-        <form action={criarCliente} className="space-y-5">
+        <form action={handleCriarCliente} className="space-y-5">
 
           {/* Nome */}
           <div>

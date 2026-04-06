@@ -4,11 +4,12 @@ import { getAuthContext } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
+import { exigirCargo, CARGOS_OPERACIONAIS } from '@/lib/permissoes'
 
 const ContratoSchema = z.object({
   nome: z.string().min(2, 'Nome deve ter no mínimo 2 caracteres.').max(200),
-  tipo: z.enum(['fixo', 'por_hora', 'exito', 'misto'], {
-    errorMap: () => ({ message: 'Tipo de contrato inválido.' }),
+  tipo: z.enum(['fixo', 'hora', 'exito', 'misto'] as const, {
+    error: 'Tipo de contrato inválido.',
   }),
   cliente_id: z.string().uuid().optional().nullable(),
   processo_id: z.string().uuid().optional().nullable(),
@@ -21,13 +22,18 @@ const ContratoSchema = z.object({
   observacoes: z.string().max(2000).optional().nullable(),
 })
 
+function normalizarTipo(tipo: string | null) {
+  if (tipo === 'por_hora') return 'hora'
+  return tipo
+}
+
 function parseContrato(formData: FormData) {
   const clienteId = formData.get('cliente_id') as string
   const processoId = formData.get('processo_id') as string
   const responsavelId = formData.get('responsavel_id') as string
   return {
     nome: (formData.get('nome') as string)?.trim(),
-    tipo: formData.get('tipo') as string,
+    tipo: normalizarTipo(formData.get('tipo') as string),
     cliente_id: clienteId || null,
     processo_id: processoId || null,
     responsavel_id: responsavelId || null,
@@ -41,12 +47,15 @@ function parseContrato(formData: FormData) {
 }
 
 export async function criarContrato(formData: FormData) {
-  const { escritorioId, supabase } = await getAuthContext()
+  const { escritorioId, cargo, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/sign-in')
+
+  const perm = exigirCargo(cargo, CARGOS_OPERACIONAIS, 'Sem permissão para criar contratos.')
+  if (perm) return perm
 
   const parse = ContratoSchema.safeParse(parseContrato(formData))
   if (!parse.success) {
-    return { erro: parse.error.errors[0]?.message ?? 'Dados inválidos.' }
+    return { erro: parse.error.issues[0]?.message ?? 'Dados inválidos.' }
   }
 
   const { data: contrato, error } = await supabase
@@ -65,16 +74,19 @@ export async function criarContrato(formData: FormData) {
 }
 
 export async function atualizarContrato(id: string, formData: FormData) {
-  const { escritorioId, supabase } = await getAuthContext()
+  const { escritorioId, cargo, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/sign-in')
+
+  const perm = exigirCargo(cargo, CARGOS_OPERACIONAIS, 'Sem permissão para atualizar contratos.')
+  if (perm) return perm
 
   const raw = { ...parseContrato(formData), status: formData.get('status') as string }
   const parse = ContratoSchema.extend({
-    status: z.enum(['ativo', 'suspenso', 'encerrado']).optional(),
+    status: z.enum(['ativo', 'suspenso', 'encerrado'] as const).optional(),
   }).safeParse(raw)
 
   if (!parse.success) {
-    return { erro: parse.error.errors[0]?.message ?? 'Dados inválidos.' }
+    return { erro: parse.error.issues[0]?.message ?? 'Dados inválidos.' }
   }
 
   const { error } = await supabase
@@ -91,11 +103,23 @@ export async function atualizarContrato(id: string, formData: FormData) {
 }
 
 export async function excluirContrato(id: string) {
-  const { escritorioId, supabase } = await getAuthContext()
+  const { escritorioId, cargo, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/sign-in')
 
-  await supabase.from('contratos').delete().eq('id', id).eq('escritorio_id', escritorioId)
+  const perm = exigirCargo(cargo, CARGOS_OPERACIONAIS, 'Sem permissão para excluir contratos.')
+  if (perm) return perm
+
+  const { error } = await supabase
+    .from('contratos')
+    .delete()
+    .eq('id', id)
+    .eq('escritorio_id', escritorioId)
+
+  if (error) {
+    console.error('Erro ao excluir contrato:', error)
+    return { erro: 'Não foi possível excluir o contrato.' }
+  }
 
   revalidatePath('/contratos')
-  redirect('/contratos')
+  return { sucesso: true }
 }

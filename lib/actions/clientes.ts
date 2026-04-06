@@ -3,25 +3,27 @@
 // -----------------------------------------------
 // CLIENTES — Cadastro e gestão de clientes
 // -----------------------------------------------
-// Clientes são as pessoas/empresas que o escritório
-// representa nos processos jurídicos.
-// -----------------------------------------------
 
 import { getAuthContext } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import { z } from 'zod'
+import { exigirCargo, CARGOS_OPERACIONAIS } from '@/lib/permissoes'
 
-// ---- CRIAR CLIENTE ----
-export async function criarCliente(formData: FormData) {
-  const { escritorioId, supabase } = await getAuthContext()
-  if (!escritorioId || !supabase) redirect('/sign-in')
+const ClienteSchema = z.object({
+  nome: z.string().min(2, 'O nome é obrigatório.').max(200),
+  cpf: z.string().max(20).optional().nullable(),
+  rg: z.string().max(20).optional().nullable(),
+  email: z.string().email('E-mail inválido.').optional().nullable(),
+  telefone: z.string().max(30).optional().nullable(),
+  whatsapp: z.string().max(30).optional().nullable(),
+  endereco: z.string().max(300).optional().nullable(),
+  observacoes: z.string().max(5000).optional().nullable(),
+})
 
-  const nome = (formData.get('nome') as string)?.trim()
-  if (!nome) return { erro: 'O nome é obrigatório.' }
-
-  const dados = {
-    escritorio_id: escritorioId,
-    nome,
+function parseCliente(formData: FormData) {
+  return {
+    nome: (formData.get('nome') as string)?.trim(),
     cpf: (formData.get('cpf') as string)?.trim() || null,
     rg: (formData.get('rg') as string)?.trim() || null,
     email: (formData.get('email') as string)?.trim() || null,
@@ -30,10 +32,27 @@ export async function criarCliente(formData: FormData) {
     endereco: (formData.get('endereco') as string)?.trim() || null,
     observacoes: (formData.get('observacoes') as string)?.trim() || null,
   }
+}
+
+// ---- CRIAR CLIENTE ----
+export async function criarCliente(formData: FormData) {
+  const { escritorioId, cargo, supabase } = await getAuthContext()
+  if (!escritorioId || !supabase) redirect('/sign-in')
+
+  const perm = exigirCargo(cargo, CARGOS_OPERACIONAIS, 'Sem permissão para criar clientes.')
+  if (perm) return perm
+
+  const parse = ClienteSchema.safeParse(parseCliente(formData))
+  if (!parse.success) {
+    return { erro: parse.error.issues[0]?.message ?? 'Dados inválidos.' }
+  }
 
   const { data: cliente, error } = await supabase
     .from('clientes')
-    .insert(dados)
+    .insert({
+      escritorio_id: escritorioId,
+      ...parse.data,
+    })
     .select('id')
     .single()
 
@@ -48,24 +67,20 @@ export async function criarCliente(formData: FormData) {
 
 // ---- ATUALIZAR CLIENTE ----
 export async function atualizarCliente(id: string, formData: FormData) {
-  const { escritorioId, supabase } = await getAuthContext()
+  const { escritorioId, cargo, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/sign-in')
 
-  const dados = {
-    nome: (formData.get('nome') as string)?.trim(),
-    cpf: (formData.get('cpf') as string)?.trim() || null,
-    rg: (formData.get('rg') as string)?.trim() || null,
-    email: (formData.get('email') as string)?.trim() || null,
-    telefone: (formData.get('telefone') as string)?.trim() || null,
-    whatsapp: (formData.get('whatsapp') as string)?.trim() || null,
-    endereco: (formData.get('endereco') as string)?.trim() || null,
-    observacoes: (formData.get('observacoes') as string)?.trim() || null,
-    atualizado_em: new Date().toISOString(),
+  const perm = exigirCargo(cargo, CARGOS_OPERACIONAIS, 'Sem permissão para atualizar clientes.')
+  if (perm) return perm
+
+  const parse = ClienteSchema.safeParse(parseCliente(formData))
+  if (!parse.success) {
+    return { erro: parse.error.issues[0]?.message ?? 'Dados inválidos.' }
   }
 
   const { error } = await supabase
     .from('clientes')
-    .update(dados)
+    .update({ ...parse.data, atualizado_em: new Date().toISOString() })
     .eq('id', id)
     .eq('escritorio_id', escritorioId)
 
@@ -78,8 +93,11 @@ export async function atualizarCliente(id: string, formData: FormData) {
 
 // ---- EXCLUIR CLIENTE ----
 export async function excluirCliente(id: string) {
-  const { escritorioId, supabase } = await getAuthContext()
+  const { escritorioId, cargo, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/sign-in')
+
+  const perm = exigirCargo(cargo, CARGOS_OPERACIONAIS, 'Sem permissão para excluir clientes.')
+  if (perm) return perm
 
   await supabase
     .from('clientes')
@@ -92,15 +110,17 @@ export async function excluirCliente(id: string) {
 }
 
 // ---- ADICIONAR NOTA DE CONTATO ----
-// Registra uma observação sobre ligação, reunião, etc.
 export async function adicionarObservacao(id: string, formData: FormData) {
-  const { escritorioId, supabase } = await getAuthContext()
+  const { escritorioId, cargo, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/sign-in')
 
-  const novaObs = (formData.get('observacao') as string)?.trim()
-  if (!novaObs) return { erro: 'Observação não pode estar vazia.' }
+  const perm = exigirCargo(cargo, CARGOS_OPERACIONAIS, 'Sem permissão para registrar observações.')
+  if (perm) return perm
 
-  // Busca observações existentes
+  const schema = z.string().min(2, 'Observação não pode estar vazia.').max(1000)
+  const parse = schema.safeParse((formData.get('observacao') as string)?.trim())
+  if (!parse.success) return { erro: parse.error.issues[0]?.message ?? 'Observação inválida.' }
+
   const { data: cliente } = await supabase
     .from('clientes')
     .select('observacoes')
@@ -110,12 +130,11 @@ export async function adicionarObservacao(id: string, formData: FormData) {
 
   if (!cliente) return { erro: 'Cliente não encontrado.' }
 
-  // Adiciona a nova observação no início, com data
   const dataFormatada = new Date().toLocaleDateString('pt-BR', {
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   })
-  const observacoesAtualizadas = `[${dataFormatada}] ${novaObs}\n\n${cliente.observacoes ?? ''}`
+  const observacoesAtualizadas = `[${dataFormatada}] ${parse.data}\n\n${cliente.observacoes ?? ''}`
 
   await supabase
     .from('clientes')

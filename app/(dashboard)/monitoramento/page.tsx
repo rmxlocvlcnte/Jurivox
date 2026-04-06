@@ -1,25 +1,38 @@
 import { getAuthContext } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import { Bot, Radio, Search, Bell, Zap, AlertCircle, ExternalLink, Scale } from 'lucide-react'
+import { Bot, Radio, Search, Bell, Zap, AlertCircle, ExternalLink, Scale, CheckCircle2, XCircle } from 'lucide-react'
+import { MonitoramentoSyncButton } from '@/components/monitoramento/MonitoramentoSyncButton'
 
 export default async function MonitoramentoPage() {
   const { escritorioId, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/onboarding')
 
-  const { data: processos } = await supabase
-    .from('processos')
-    .select('id, numero_cnj, tribunal, status')
-    .eq('escritorio_id', escritorioId)
-    .eq('status', 'ativo')
-    .order('numero_cnj')
+  const datajudConfigurado = !!process.env.DATAJUD_API_URL
+
+  const [
+    { data: processos },
+    { data: logs },
+  ] = await Promise.all([
+    supabase
+      .from('processos')
+      .select('id, numero_cnj, tribunal, status')
+      .eq('escritorio_id', escritorioId)
+      .eq('status', 'ativo')
+      .order('numero_cnj'),
+
+    supabase
+      .from('monitoramento_logs')
+      .select('id, numero_cnj, tribunal, movimentacoes_novas, status, erro_mensagem, executado_em')
+      .eq('escritorio_id', escritorioId)
+      .order('executado_em', { ascending: false })
+      .limit(20),
+  ])
 
   const tribunaisSuportados = [
-    { nome: 'TJSP', status: 'em breve' },
-    { nome: 'TJRJ', status: 'em breve' },
-    { nome: 'TRT-2', status: 'em breve' },
-    { nome: 'TRF-3', status: 'em breve' },
-    { nome: 'STJ', status: 'em breve' },
-    { nome: 'DataJud / CNJ', status: 'em breve' },
+    { nome: 'TJSP', status: 'ativo' }, { nome: 'TJRJ', status: 'ativo' },
+    { nome: 'TJMG', status: 'ativo' }, { nome: 'TJRS', status: 'ativo' },
+    { nome: 'TRT-2', status: 'ativo' }, { nome: 'TRF-3', status: 'ativo' },
+    { nome: 'STJ', status: 'ativo' }, { nome: 'DataJud / CNJ', status: 'ativo' },
   ]
 
   return (
@@ -39,12 +52,19 @@ export default async function MonitoramentoPage() {
         <div className="flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-purple-600 shrink-0 mt-0.5" />
           <div>
-            <h2 className="font-semibold text-purple-900 mb-1">Módulo em Desenvolvimento</h2>
+            <h2 className="font-semibold text-purple-900 mb-1">
+              {datajudConfigurado ? 'Monitoramento ativo' : 'Configuração necessária'}
+            </h2>
             <p className="text-sm text-purple-700">
-              O monitoramento automático de publicações está sendo desenvolvido.
-              Este módulo irá ler automaticamente o Diário de Justiça Eletrônico (DJe)
-              e os portais dos tribunais para detectar novos andamentos e alertá-lo em tempo real.
+              {datajudConfigurado
+                ? 'Integração DataJud configurada. Use o botão para sincronizar novas movimentações.'
+                : 'Defina DATAJUD_API_URL e DATAJUD_API_KEY no .env.local para habilitar a integração com DataJud/DJe.'}
             </p>
+            {datajudConfigurado && (
+              <div className="mt-3">
+                <MonitoramentoSyncButton escritorioId={escritorioId} />
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -102,7 +122,8 @@ export default async function MonitoramentoPage() {
       {/* Tribunais */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
         <div className="px-5 py-4 border-b border-slate-100">
-          <h2 className="font-semibold text-slate-900">Tribunais que serão integrados</h2>
+          <h2 className="font-semibold text-slate-900">Tribunais integrados via DataJud</h2>
+          <p className="text-xs text-slate-400 mt-0.5">Todos os tribunais disponíveis na API pública do CNJ</p>
         </div>
         <div className="divide-y divide-slate-100">
           {tribunaisSuportados.map(t => (
@@ -113,13 +134,49 @@ export default async function MonitoramentoPage() {
                 </div>
                 <p className="text-sm font-semibold text-slate-900">{t.nome}</p>
               </div>
-              <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-700">
-                Em breve
+              <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
+                datajudConfigurado ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+              }`}>
+                {datajudConfigurado ? 'Integrado' : 'Requer configuração'}
               </span>
             </div>
           ))}
         </div>
       </div>
+
+      {/* Histórico de sincronizações */}
+      {(logs?.length ?? 0) > 0 && (
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+          <div className="px-5 py-4 border-b border-slate-100">
+            <h2 className="font-semibold text-slate-900">Histórico de Sincronizações</h2>
+          </div>
+          <div className="divide-y divide-slate-100 max-h-72 overflow-y-auto">
+            {logs!.map(log => (
+              <div key={log.id} className="flex items-center gap-3 px-5 py-3">
+                {log.status === 'sucesso' ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                ) : (
+                  <XCircle className="w-4 h-4 text-red-400 shrink-0" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-mono text-slate-700 truncate">{log.numero_cnj}</p>
+                  {log.erro_mensagem && (
+                    <p className="text-xs text-red-500">{log.erro_mensagem}</p>
+                  )}
+                </div>
+                <div className="text-right shrink-0">
+                  {log.movimentacoes_novas > 0 && (
+                    <span className="text-xs text-emerald-600 font-medium">+{log.movimentacoes_novas}</span>
+                  )}
+                  <p className="text-xs text-slate-400">
+                    {new Date(log.executado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Processos monitoráveis */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
