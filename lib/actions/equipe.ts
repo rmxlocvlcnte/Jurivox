@@ -4,6 +4,7 @@ import { getAuthContext } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { exigirCargo, CARGOS_FINANCEIRO } from '@/lib/permissoes'
+import { verificarLimite } from '@/lib/limites'
 
 // ---- ENVIAR CONVITE ----
 export async function enviarConvite(formData: FormData) {
@@ -12,6 +13,9 @@ export async function enviarConvite(formData: FormData) {
 
   const perm = exigirCargo(cargo, CARGOS_FINANCEIRO, 'Sem permissão para convidar membros.')
   if (perm) return perm
+
+  const limite = await verificarLimite(escritorioId, 'membros', supabase)
+  if (limite.atingido) return { erro: limite.mensagem! }
 
   const nomeConvidado = (formData.get('nome') as string)?.trim()
   const emailConvidado = (formData.get('email') as string)?.trim()

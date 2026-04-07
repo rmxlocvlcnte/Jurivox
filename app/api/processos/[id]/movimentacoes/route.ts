@@ -7,7 +7,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  const { escritorioId, supabase } = await getAuthContext()
+  const { escritorioId, supabase, mfaObrigatorio } = await getAuthContext({ redirecionar2FA: false })
+  if (mfaObrigatorio) return NextResponse.json({ erro: '2FA obrigatório.' }, { status: 403 })
   if (!escritorioId || !supabase) return NextResponse.json(null, { status: 401 })
 
   // Verifica que o processo pertence ao escritório

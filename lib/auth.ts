@@ -1,6 +1,6 @@
-import { auth } from '@clerk/nextjs/server'
-import { createClient } from '@/lib/supabase/server'
+import { auth, clerkClient } from '@clerk/nextjs/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { redirect } from 'next/navigation'
 
 // -----------------------------------------------
 // getAuthContext
@@ -18,12 +18,17 @@ import { createAdminClient } from '@/lib/supabase/admin'
 // Sem isso, cada query poderia vazar dados de outros clientes.
 // -----------------------------------------------
 
-export async function getAuthContext() {
-  const { userId } = await auth()
+type AuthContextOptions = {
+  exigir2FA?: boolean
+  redirecionar2FA?: boolean
+}
+
+export async function getAuthContext(options: AuthContextOptions = {}) {
+  const { userId, sessionId } = await auth()
 
   // Se não há usuário logado, retorna tudo nulo
   if (!userId) {
-    return { userId: null, escritorioId: null, membroId: null, cargo: null, supabase: null }
+    return { userId: null, sessionId: null, escritorioId: null, membroId: null, cargo: null, supabase: null, mfaObrigatorio: false }
   }
 
   const supabase = createAdminClient()
@@ -37,12 +42,42 @@ export async function getAuthContext() {
     .limit(1)
     .maybeSingle()
 
+  const escritorioId = membro?.escritorio_id ?? null
+  const membroId = membro?.id ?? null
+  const cargo = membro?.cargo ?? null
+
+  const exigir2FA = options.exigir2FA ?? true
+  const redirecionar2FA = options.redirecionar2FA ?? true
+
+  if (exigir2FA && escritorioId) {
+    const client = await clerkClient()
+    const user = await client.users.getUser(userId)
+    const mfaAtivo = !!user.twoFactorEnabled || !!user.totpEnabled || !!user.backupCodeEnabled
+
+    if (!mfaAtivo) {
+      if (redirecionar2FA) {
+        redirect('/seguranca?mfa=obrigatorio')
+      }
+      return {
+        userId,
+        sessionId,
+        escritorioId,
+        membroId,
+        cargo,
+        supabase,
+        mfaObrigatorio: true,
+      }
+    }
+  }
+
   return {
     userId,
-    escritorioId: membro?.escritorio_id ?? null,
-    membroId: membro?.id ?? null,
-    cargo: membro?.cargo ?? null,
+    sessionId,
+    escritorioId,
+    membroId,
+    cargo,
     supabase,
+    mfaObrigatorio: false,
   }
 }
 

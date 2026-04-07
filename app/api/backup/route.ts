@@ -11,7 +11,11 @@ import { exigirCargo } from '@/lib/permissoes'
 const CARGOS_BACKUP = ['socio', 'admin']
 
 export async function GET(req: NextRequest) {
-  const { escritorioId, cargo, supabase } = await getAuthContext()
+  const { escritorioId, cargo, supabase, mfaObrigatorio } = await getAuthContext({ redirecionar2FA: false })
+
+  if (mfaObrigatorio) {
+    return NextResponse.json({ erro: '2FA obrigatório.' }, { status: 403 })
+  }
 
   if (!escritorioId || !supabase) {
     return NextResponse.json({ erro: 'Não autenticado.' }, { status: 401 })

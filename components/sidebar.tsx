@@ -18,6 +18,7 @@ import {
   FileText,
   CreditCard,
   UserCheck,
+  ShieldCheck,
   Radio,
 } from 'lucide-react'
 
@@ -32,13 +33,14 @@ const navItems = [
   { href: '/financeiro',       label: 'Financeiro',       icon: DollarSign },
   { href: '/contas-receber',   label: 'Contas a Receber', icon: CreditCard },
   { href: '/equipe',           label: 'Equipe',           icon: UserCheck },
+  { href: '/seguranca',        label: 'Segurança',        icon: ShieldCheck },
   { href: '/ia',               label: 'Assistente IA',    icon: Bot },
   { href: '/monitoramento',    label: 'Monitoramento',    icon: Radio },
 ]
 
 const GRUPOS = [
   { label: 'Principal', items: ['/dashboard', '/processos', '/clientes', '/prazos', '/agenda'] },
-  { label: 'Gestão', items: ['/contratos', '/timesheet', '/financeiro', '/contas-receber', '/equipe'] },
+  { label: 'Gestão', items: ['/contratos', '/timesheet', '/financeiro', '/contas-receber', '/equipe', '/seguranca'] },
   { label: 'IA & Automação', items: ['/ia', '/monitoramento'] },
 ]
 

@@ -5,7 +5,10 @@ function csvEscape(value: unknown) {
 }
 
 export async function GET(req: Request) {
-  const { userId, escritorioId, supabase } = await getAuthContext()
+  const { userId, escritorioId, supabase, mfaObrigatorio } = await getAuthContext({ redirecionar2FA: false })
+  if (mfaObrigatorio) {
+    return new Response('2FA obrigatório', { status: 403 })
+  }
   if (!userId || !escritorioId || !supabase) {
     return new Response('Não autorizado', { status: 401 })
   }

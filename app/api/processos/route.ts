@@ -3,7 +3,10 @@ import { getAuthContext } from '@/lib/auth'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
-  const { escritorioId, supabase } = await getAuthContext()
+  const { escritorioId, supabase, mfaObrigatorio } = await getAuthContext({ redirecionar2FA: false })
+  if (mfaObrigatorio) {
+    return NextResponse.json({ erro: '2FA obrigatório.' }, { status: 403 })
+  }
   if (!escritorioId || !supabase) {
     return NextResponse.json([], { status: 401 })
   }

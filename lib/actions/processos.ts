@@ -12,6 +12,7 @@ import { emailNovaMovimentacao } from '@/lib/notificacoes/email'
 import { whatsappNovaMovimentacao } from '@/lib/notificacoes/whatsapp'
 import { z } from 'zod'
 import { exigirCargo, CARGOS_OPERACIONAIS } from '@/lib/permissoes'
+import { verificarLimite } from '@/lib/limites'
 
 const ProcessoSchema = z.object({
   cliente_id: z.string().uuid().optional().nullable(),
@@ -43,6 +44,9 @@ export async function criarProcesso(formData: FormData) {
 
   const perm = exigirCargo(cargo, CARGOS_OPERACIONAIS, 'Sem permissão para criar processos.')
   if (perm) return perm
+
+  const limite = await verificarLimite(escritorioId, 'processos', supabase)
+  if (limite.atingido) return { erro: limite.mensagem! }
 
   const parse = ProcessoSchema.safeParse({
     cliente_id: (formData.get('cliente_id') as string) || null,

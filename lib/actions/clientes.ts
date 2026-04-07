@@ -9,6 +9,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { exigirCargo, CARGOS_OPERACIONAIS } from '@/lib/permissoes'
+import { verificarLimite } from '@/lib/limites'
 
 const ClienteSchema = z.object({
   nome: z.string().min(2, 'O nome é obrigatório.').max(200),
@@ -41,6 +42,9 @@ export async function criarCliente(formData: FormData) {
 
   const perm = exigirCargo(cargo, CARGOS_OPERACIONAIS, 'Sem permissão para criar clientes.')
   if (perm) return perm
+
+  const limite = await verificarLimite(escritorioId, 'clientes', supabase)
+  if (limite.atingido) return { erro: limite.mensagem! }
 
   const parse = ClienteSchema.safeParse(parseCliente(formData))
   if (!parse.success) {

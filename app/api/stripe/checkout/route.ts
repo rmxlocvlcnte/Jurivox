@@ -4,7 +4,8 @@ import { criarCheckoutSession } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function POST(req: NextRequest) {
-  const { escritorioId } = await getAuthContext()
+  const { escritorioId, mfaObrigatorio } = await getAuthContext({ redirecionar2FA: false })
+  if (mfaObrigatorio) return NextResponse.json({ erro: '2FA obrigatório.' }, { status: 403 })
   if (!escritorioId) return NextResponse.json({ erro: 'Não autenticado.' }, { status: 401 })
 
   const { plano_id, periodo } = await req.json()

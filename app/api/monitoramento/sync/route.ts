@@ -6,7 +6,8 @@ export async function POST() {
   const { userId } = await auth()
   if (!userId) return new Response('Não autorizado', { status: 401 })
 
-  const { escritorioId, supabase } = await getAuthContext()
+  const { escritorioId, supabase, mfaObrigatorio } = await getAuthContext({ redirecionar2FA: false })
+  if (mfaObrigatorio) return new Response('2FA obrigatório', { status: 403 })
   if (!escritorioId || !supabase) return new Response('Sem escritório', { status: 403 })
 
   if (!process.env.DATAJUD_API_URL) {

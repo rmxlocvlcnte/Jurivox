@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { exigirCargo, CARGOS_OPERACIONAIS } from '@/lib/permissoes'
+import { verificarLimite } from '@/lib/limites'
 
 const TemplateSchema = z.object({
   nome: z.string().min(2, 'Nome obrigatório.').max(200),
@@ -18,6 +19,9 @@ export async function criarTemplate(formData: FormData) {
 
   const perm = exigirCargo(cargo, CARGOS_OPERACIONAIS, 'Sem permissão para criar templates.')
   if (perm) return perm
+
+  const limite = await verificarLimite(escritorioId, 'templates', supabase)
+  if (limite.atingido) return { erro: limite.mensagem! }
 
   const parse = TemplateSchema.safeParse({
     nome: (formData.get('nome') as string)?.trim(),
