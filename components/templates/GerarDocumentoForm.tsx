@@ -3,22 +3,23 @@
 import { useState, useTransition } from 'react'
 import { gerarDocumentoDeTemplate } from '@/lib/actions/templates'
 import { toast } from 'sonner'
-import { FileText, Download } from 'lucide-react'
+import { FileText, Download, FileDown, Loader2 } from 'lucide-react'
 
 interface Props {
   templateId: string
+  templateNome: string
   variaveis: string[]
   processos: { id: string; numero_cnj: string; cliente: string }[]
   clientes: { id: string; nome: string }[]
 }
 
-export function GerarDocumentoForm({ templateId, variaveis, processos, clientes }: Props) {
+export function GerarDocumentoForm({ templateId, templateNome, variaveis, processos, clientes }: Props) {
   const [isPending, startTransition] = useTransition()
+  const [isPDF, setIsPDF] = useState(false)
   const [valores, setValores] = useState<Record<string, string>>({})
   const [processoId, setProcessoId] = useState('')
   const [clienteId, setClienteId] = useState('')
 
-  // Preenche automaticamente algumas variáveis ao selecionar processo
   function handleProcesso(id: string) {
     setProcessoId(id)
     const proc = processos.find(p => p.id === id)
@@ -39,10 +40,81 @@ export function GerarDocumentoForm({ templateId, variaveis, processos, clientes 
     }
   }
 
-  function handleGerar() {
-    // data_hoje automática
+  function getTodosValores() {
     const hoje = new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })
-    const todosValores = { data_hoje: hoje, ...valores }
+    return { data_hoje: hoje, ...valores }
+  }
+
+  async function gerarPDF(conteudo: string, nome: string) {
+    const { jsPDF } = await import('jspdf')
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+    const pageWidth = doc.internal.pageSize.getWidth()
+    const pageHeight = doc.internal.pageSize.getHeight()
+    const margin = 20
+    const usableWidth = pageWidth - margin * 2
+
+    // Cabeçalho dourado
+    doc.setFillColor(245, 158, 11)
+    doc.rect(0, 0, pageWidth, 16, 'F')
+    doc.setTextColor(15, 23, 42)
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'bold')
+    doc.text('JurisFlow', margin, 10)
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8)
+    doc.text(new Date().toLocaleDateString('pt-BR'), pageWidth - margin, 10, { align: 'right' })
+
+    // Título do documento
+    doc.setTextColor(15, 23, 42)
+    doc.setFontSize(14)
+    doc.setFont('helvetica', 'bold')
+    doc.text(nome, margin, 28)
+
+    // Linha separadora
+    doc.setDrawColor(226, 232, 240)
+    doc.line(margin, 32, pageWidth - margin, 32)
+
+    // Conteúdo
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(30, 41, 59)
+
+    const linhas = doc.splitTextToSize(conteudo, usableWidth)
+    let y = 40
+    const lineHeight = 5.5
+
+    for (const linha of linhas) {
+      if (y + lineHeight > pageHeight - 20) {
+        doc.addPage()
+        // Cabeçalho nas páginas seguintes
+        doc.setFillColor(245, 158, 11)
+        doc.rect(0, 0, pageWidth, 10, 'F')
+        y = 18
+      }
+      doc.text(linha, margin, y)
+      y += lineHeight
+    }
+
+    // Rodapé com paginação em todas as páginas
+    const pageCount = (doc as any).internal.getNumberOfPages()
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i)
+      doc.setFontSize(7)
+      doc.setTextColor(148, 163, 184)
+      doc.text(
+        `JurisFlow · ${nome} · Página ${i} de ${pageCount}`,
+        pageWidth / 2,
+        pageHeight - 8,
+        { align: 'center' }
+      )
+    }
+
+    doc.save(`${nome.replace(/[^a-zA-Z0-9À-ÿ\s]/g, '')}.pdf`)
+  }
+
+  function handleGerar(tipo: 'salvar' | 'pdf') {
+    setIsPDF(tipo === 'pdf')
+    const todosValores = getTodosValores()
 
     startTransition(async () => {
       const res = await gerarDocumentoDeTemplate(
@@ -53,23 +125,40 @@ export function GerarDocumentoForm({ templateId, variaveis, processos, clientes 
       )
       if (res && 'erro' in res) {
         toast.error(res.erro)
+        return
+      }
+
+      if (tipo === 'pdf' && res && 'conteudo' in res) {
+        await gerarPDF(res.conteudo as string, res.nome as string ?? templateNome)
+        toast.success('PDF gerado!')
       } else {
-        toast.success('Documento gerado com sucesso!')
+        toast.success('Documento salvo com sucesso!')
       }
     })
   }
 
   if (variaveis.length === 0) {
     return (
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-        <p className="text-sm text-slate-500">Este template não possui variáveis.</p>
-        <button
-          onClick={handleGerar}
-          disabled={isPending}
-          className="mt-3 w-full py-2 text-sm font-semibold text-slate-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors disabled:opacity-50"
-        >
-          {isPending ? 'Gerando...' : 'Gerar Documento'}
-        </button>
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-2">
+        <p className="text-xs text-slate-500">Este template não possui variáveis dinâmicas.</p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => handleGerar('salvar')}
+            disabled={isPending}
+            className="flex-1 py-2 text-sm font-semibold text-slate-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors disabled:opacity-50"
+          >
+            {isPending && !isPDF ? <Loader2 className="w-3.5 h-3.5 animate-spin inline mr-1" /> : null}
+            Salvar Documento
+          </button>
+          <button
+            onClick={() => handleGerar('pdf')}
+            disabled={isPending}
+            title="Baixar como PDF"
+            className="flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors disabled:opacity-50"
+          >
+            {isPending && isPDF ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-4 h-4" />}
+          </button>
+        </div>
       </div>
     )
   }
@@ -127,14 +216,26 @@ export function GerarDocumentoForm({ templateId, variaveis, processos, clientes 
         ))}
       </div>
 
-      <button
-        onClick={handleGerar}
-        disabled={isPending}
-        className="w-full py-2 text-sm font-semibold text-slate-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-      >
-        <Download className="w-4 h-4" />
-        {isPending ? 'Gerando...' : 'Gerar Documento'}
-      </button>
+      {/* Botões de ação */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => handleGerar('salvar')}
+          disabled={isPending}
+          className="flex-1 py-2 text-sm font-semibold text-slate-900 bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+        >
+          {isPending && !isPDF ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+          Salvar
+        </button>
+        <button
+          onClick={() => handleGerar('pdf')}
+          disabled={isPending}
+          title="Baixar como PDF"
+          className="flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors disabled:opacity-50"
+        >
+          {isPending && isPDF ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-4 h-4" />}
+          PDF
+        </button>
+      </div>
     </div>
   )
 }

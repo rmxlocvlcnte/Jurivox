@@ -7,6 +7,18 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Clock, Plus } from 'lucide-react'
 import { ListaPrazosFiltrada } from '@/components/lista-prazos-filtrada'
+import { ExportButton } from '@/components/export-button'
+
+const EXPORT_COLS = [
+  { key: 'descricao', label: 'Descrição' },
+  { key: 'data_inicio', label: 'Data Início', format: (row: any) => row.data_inicio ? new Date(row.data_inicio + 'T12:00:00').toLocaleDateString('pt-BR') : '' },
+  { key: 'data_vencimento', label: 'Vencimento', format: (row: any) => row.data_vencimento ? new Date(row.data_vencimento + 'T12:00:00').toLocaleDateString('pt-BR') : '' },
+  { key: 'quantidade_dias', label: 'Dias' },
+  { key: 'dias_uteis', label: 'Úteis?', format: (row: any) => row.dias_uteis ? 'Sim' : 'Não' },
+  { key: 'concluido', label: 'Status', format: (row: any) => row.concluido ? 'Concluído' : 'Pendente' },
+  { key: 'processo', label: 'Processo', format: (row: any) => (row.processos as any)?.numero_cnj ?? '' },
+  { key: 'cliente', label: 'Cliente', format: (row: any) => (row.processos as any)?.clientes?.nome ?? '' },
+]
 
 function diasRestantes(dataVencimento: string): number {
   const hoje = new Date()
@@ -50,7 +62,7 @@ export default async function PrazosPage({
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       {/* Cabeçalho */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Prazos</h1>
           <p className="text-slate-500 text-sm mt-1">
@@ -59,12 +71,17 @@ export default async function PrazosPage({
             {proximos.length} nos próximos 7 dias
           </p>
         </div>
-        <Link
-          href="/prazos/novo"
-          className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-4 py-2 rounded-lg transition-colors text-sm"
-        >
-          <Plus className="w-4 h-4" /> Novo Prazo
-        </Link>
+        <div className="flex items-center gap-2 flex-wrap">
+          {lista.length > 0 && (
+            <ExportButton data={lista} columns={EXPORT_COLS} filename="Prazos - JurisFlow" />
+          )}
+          <Link
+            href="/prazos/novo"
+            className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-4 py-2 rounded-lg transition-colors text-sm"
+          >
+            <Plus className="w-4 h-4" /> Novo Prazo
+          </Link>
+        </div>
       </div>
 
       {/* Sem prazos */}

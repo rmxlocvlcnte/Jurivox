@@ -32,5 +32,5 @@ pnpm-debug.log*
 # TypeScript
 next-env.d.ts
 
-# Banco de dados — SQL com schema e dados sensíveis
-database/
+# Banco de dados — Schemas SQL são versionados (sem dados sensíveis)
+# database/

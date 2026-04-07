@@ -90,6 +90,7 @@ export default async function TemplatePage({ params }: { params: Promise<{ id: s
           {/* Gerar documento */}
           <GerarDocumentoForm
             templateId={id}
+            templateNome={template.nome}
             variaveis={variaveis}
             processos={(processos ?? []).map(p => ({
               id: p.id,

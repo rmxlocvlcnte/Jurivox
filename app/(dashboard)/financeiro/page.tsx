@@ -3,10 +3,28 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { criarMovimentacaoFinanceira, registrarPagamento } from '@/lib/actions/financeiro'
 import { HonorarioForm } from '@/components/financeiro/HonorarioForm'
+import { ExportButton } from '@/components/export-button'
 import {
   DollarSign, TrendingUp, TrendingDown, Plus,
   ArrowUpCircle, ArrowDownCircle, FileText, CreditCard,
 } from 'lucide-react'
+
+const EXPORT_MOVS = [
+  { key: 'tipo', label: 'Tipo', format: (row: any) => row.tipo === 'entrada' ? 'Entrada' : 'Saída' },
+  { key: 'descricao', label: 'Descrição' },
+  { key: 'categoria', label: 'Categoria' },
+  { key: 'valor', label: 'Valor (R$)', format: (row: any) => Number(row.valor ?? 0).toFixed(2) },
+  { key: 'data', label: 'Data', format: (row: any) => row.data ? new Date(row.data + 'T12:00:00').toLocaleDateString('pt-BR') : '' },
+]
+
+const EXPORT_HONORARIOS = [
+  { key: 'cliente', label: 'Cliente', format: (row: any) => (row.processos as any)?.clientes?.nome ?? '' },
+  { key: 'processo', label: 'Processo', format: (row: any) => (row.processos as any)?.numero_cnj ?? '' },
+  { key: 'tipo', label: 'Tipo', format: (row: any) => row.tipo === 'exito' ? 'Êxito' : row.tipo === 'pro_labore' ? 'Pró-labore' : 'Parcelado' },
+  { key: 'valor_total', label: 'Valor Total (R$)', format: (row: any) => Number(row.valor_total ?? 0).toFixed(2) },
+  { key: 'status', label: 'Status' },
+  { key: 'criado_em', label: 'Criado em', format: (row: any) => row.criado_em ? new Date(row.criado_em).toLocaleDateString('pt-BR') : '' },
+]
 
 function formatarMoeda(valor: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor)
@@ -85,17 +103,25 @@ export default async function FinanceiroPage() {
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-xl md:text-2xl font-bold text-slate-900">Financeiro</h1>
           <p className="text-slate-500 text-sm mt-1">Honorários, pagamentos e fluxo de caixa</p>
         </div>
-        <Link
-          href="/financeiro/relatorio"
-          className="px-3 py-2 text-sm font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
-        >
-          Relatório
-        </Link>
+        <div className="flex items-center gap-2 flex-wrap">
+          {(movimentacoes?.length ?? 0) > 0 && (
+            <ExportButton data={movimentacoes ?? []} columns={EXPORT_MOVS} filename="Movimentações - JurisFlow" />
+          )}
+          {(honorarios?.length ?? 0) > 0 && (
+            <ExportButton data={honorarios ?? []} columns={EXPORT_HONORARIOS} filename="Honorários - JurisFlow" label="Hon.:" />
+          )}
+          <Link
+            href="/financeiro/relatorio"
+            className="px-3 py-2 text-sm font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+          >
+            Relatório
+          </Link>
+        </div>
       </div>
 
       {/* Cards de resumo */}

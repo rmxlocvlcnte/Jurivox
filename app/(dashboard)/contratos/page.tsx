@@ -3,6 +3,20 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { FileText, Plus } from 'lucide-react'
 import { ListaContratosFiltrada } from '@/components/lista-contratos-filtrada'
+import { ExportButton } from '@/components/export-button'
+
+const EXPORT_COLS = [
+  { key: 'nome', label: 'Nome' },
+  { key: 'tipo', label: 'Tipo' },
+  { key: 'status', label: 'Status' },
+  { key: 'cliente', label: 'Cliente', format: (row: any) => (row.clientes as any)?.nome ?? '' },
+  { key: 'processo', label: 'Processo', format: (row: any) => (row.processos as any)?.numero_cnj ?? '' },
+  { key: 'valor_fixo', label: 'Valor Fixo (R$)', format: (row: any) => row.valor_fixo != null ? Number(row.valor_fixo).toFixed(2) : '' },
+  { key: 'valor_hora', label: 'Valor/Hora (R$)', format: (row: any) => row.valor_hora != null ? Number(row.valor_hora).toFixed(2) : '' },
+  { key: 'percentual_exito', label: '% Êxito', format: (row: any) => row.percentual_exito != null ? `${row.percentual_exito}%` : '' },
+  { key: 'responsavel', label: 'Responsável', format: (row: any) => (row.membros_escritorio as any)?.nome ?? '' },
+  { key: 'criado_em', label: 'Criado em', format: (row: any) => row.criado_em ? new Date(row.criado_em).toLocaleDateString('pt-BR') : '' },
+]
 
 export default async function ContratosPage({
   searchParams,
@@ -36,19 +50,24 @@ export default async function ContratosPage({
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-xl md:text-2xl font-bold text-slate-900">Contratos</h1>
           <p className="text-slate-500 text-sm mt-1">Relações comerciais com clientes</p>
         </div>
-        <Link
-          href="/contratos/novo"
-          className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-3 md:px-4 py-2 rounded-lg transition-colors text-sm shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          <span className="hidden sm:inline">Novo Contrato</span>
-          <span className="sm:hidden">Novo</span>
-        </Link>
+        <div className="flex items-center gap-2 flex-wrap">
+          {!!contratos?.length && (
+            <ExportButton data={contratos ?? []} columns={EXPORT_COLS} filename="Contratos - JurisFlow" />
+          )}
+          <Link
+            href="/contratos/novo"
+            className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-3 md:px-4 py-2 rounded-lg transition-colors text-sm shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">Novo Contrato</span>
+            <span className="sm:hidden">Novo</span>
+          </Link>
+        </div>
       </div>
 
       {/* Resumo */}

@@ -4,6 +4,7 @@ import { PLANOS, formatarPreco } from '@/lib/stripe'
 import { Check, Zap, Crown, Star } from 'lucide-react'
 import { PlanoCheckoutButton } from '@/components/planos/PlanoCheckoutButton'
 import { PlanoPortalButton } from '@/components/planos/PlanoPortalButton'
+import { BackupButton } from '@/components/backup-button'
 
 const ICONES = { starter: Star, pro: Zap, enterprise: Crown }
 
@@ -60,9 +61,12 @@ export default async function PlanosPage() {
               </p>
             )}
           </div>
-          {assinatura.stripe_customer_id && (
-            <PlanoPortalButton customerId={assinatura.stripe_customer_id} />
-          )}
+          <div className="flex items-center gap-2 flex-wrap">
+            <BackupButton />
+            {assinatura.stripe_customer_id && (
+              <PlanoPortalButton customerId={assinatura.stripe_customer_id} />
+            )}
+          </div>
         </div>
       )}
 

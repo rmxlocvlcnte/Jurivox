@@ -144,5 +144,5 @@ export async function gerarDocumentoDeTemplate(
   if (error || !doc) return { erro: 'Não foi possível gerar o documento.' }
 
   revalidatePath('/templates')
-  return { sucesso: true, documentoId: doc.id }
+  return { sucesso: true, documentoId: doc.id, conteudo, nome: template.nome }
 }
