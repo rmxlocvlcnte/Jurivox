@@ -18,7 +18,8 @@ ALTER TABLE clientes ADD COLUMN IF NOT EXISTS fts tsvector
 
 CREATE INDEX IF NOT EXISTS idx_clientes_fts ON clientes USING GIN(fts);
 
--- ─── 2. PROCESSOS — Índice em número CNJ, tribunal, assunto ─────────
+-- ─── 2. PROCESSOS — Índice em número CNJ, tribunal, classe, área ────
+-- Colunas reais: numero_cnj, tribunal, vara, classe, area_juridica, descricao
 
 ALTER TABLE processos ADD COLUMN IF NOT EXISTS fts tsvector
   GENERATED ALWAYS AS (
@@ -26,27 +27,28 @@ ALTER TABLE processos ADD COLUMN IF NOT EXISTS fts tsvector
       coalesce(numero_cnj, '') || ' ' ||
       coalesce(tribunal, '') || ' ' ||
       coalesce(vara, '') || ' ' ||
-      coalesce(assunto, '') || ' ' ||
+      coalesce(classe, '') || ' ' ||
       coalesce(area_juridica, '') || ' ' ||
-      coalesce(observacoes, '')
+      coalesce(descricao, '')
     )
   ) STORED;
 
 CREATE INDEX IF NOT EXISTS idx_processos_fts ON processos USING GIN(fts);
 
 -- ─── 3. PRAZOS — Índice em descrição ────────────────────────────────
+-- Colunas reais: descricao
 
 ALTER TABLE prazos ADD COLUMN IF NOT EXISTS fts tsvector
   GENERATED ALWAYS AS (
     to_tsvector('portuguese',
-      coalesce(descricao, '') || ' ' ||
-      coalesce(observacoes, '')
+      coalesce(descricao, '')
     )
   ) STORED;
 
 CREATE INDEX IF NOT EXISTS idx_prazos_fts ON prazos USING GIN(fts);
 
 -- ─── 4. CONTRATOS — Índice em nome e observações ────────────────────
+-- Colunas reais: nome, observacoes
 
 ALTER TABLE contratos ADD COLUMN IF NOT EXISTS fts tsvector
   GENERATED ALWAYS AS (
@@ -59,19 +61,20 @@ ALTER TABLE contratos ADD COLUMN IF NOT EXISTS fts tsvector
 CREATE INDEX IF NOT EXISTS idx_contratos_fts ON contratos USING GIN(fts);
 
 -- ─── 5. AGENDA — Índice em título e descrição ───────────────────────
+-- Colunas reais: titulo, descricao
 
 ALTER TABLE agenda_eventos ADD COLUMN IF NOT EXISTS fts tsvector
   GENERATED ALWAYS AS (
     to_tsvector('portuguese',
       coalesce(titulo, '') || ' ' ||
-      coalesce(descricao, '') || ' ' ||
-      coalesce(local, '')
+      coalesce(descricao, '')
     )
   ) STORED;
 
 CREATE INDEX IF NOT EXISTS idx_agenda_fts ON agenda_eventos USING GIN(fts);
 
 -- ─── 6. TEMPLATES — Índice em nome e conteúdo ───────────────────────
+-- Colunas reais: nome, conteudo
 
 ALTER TABLE templates_documento ADD COLUMN IF NOT EXISTS fts tsvector
   GENERATED ALWAYS AS (
