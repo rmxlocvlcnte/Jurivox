@@ -1,89 +1,54 @@
-# Guia de Instalação — JurisFlow
+# Guia de Instalacao - JurisFlow
 
-Siga cada passo na ordem. Não pule etapas.
+Siga na ordem. O sistema depende das migracoes versionadas.
 
----
-
-## Passo 1 — Instalar os pacotes
-
-Abra o terminal **dentro do VS Code** (Menu Terminal > Novo Terminal) e rode:
-
+## 1) Dependencias
 ```bash
-pnpm add @supabase/supabase-js @supabase/ssr @clerk/nextjs
+npm install
 ```
 
-Aguarde terminar. Os erros vermelhos no VS Code vão desaparecer após isso.
-
----
-
-## Passo 2 — Criar o arquivo de variáveis de ambiente
-
-No terminal:
-
+## 2) Variaveis de ambiente
 ```bash
 cp .env.local.example .env.local
 ```
+Preencha o `.env.local` com chaves reais de:
+- Clerk
+- Supabase
+- Stripe
+- Resend
+- DataJud
+- e opcionalmente `NEXT_PUBLIC_ENABLE_CLIENT_ERROR_REPORTING` para captura de erros no cliente
 
-Abra o arquivo `.env.local` e preencha com suas chaves reais (veja os passos 3 e 4).
+## 3) Banco de dados (Supabase SQL Editor)
+Execute os arquivos **na ordem exata**:
+1. `database/schema.sql`
+2. `database/schema_v2_financeiro.sql`
+3. `database/schema_v3_novos_modulos.sql`
+4. `database/schema_v4_documentos_processo.sql`
+5. `database/schema_v5_rate_limit.sql`
+6. `database/schema_v6_templates_assinaturas_planos.sql`
+7. `database/schema_v7_busca_fulltext.sql`
+8. `database/schema_v8_hardening_convites_drift.sql`
 
----
-
-## Passo 3 — Criar conta e pegar chaves do Clerk
-
-1. Acesse https://clerk.com e crie uma conta gratuita
-2. Clique em "Create Application"
-3. Dê um nome (ex: JurisFlow) e ative "Email" e "Google" como métodos de login
-4. No menu lateral, clique em **API Keys**
-5. Copie:
-   - `Publishable Key` → cole em `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
-   - `Secret Key` → cole em `CLERK_SECRET_KEY`
-
----
-
-## Passo 4 — Criar conta e pegar chaves do Supabase
-
-1. Acesse https://supabase.com e crie uma conta gratuita
-2. Clique em "New Project"
-3. Escolha um nome (ex: jurisflow) e uma senha forte para o banco
-4. Aguarde o projeto ser criado (~2 minutos)
-5. Vá em **Settings > API**
-6. Copie:
-   - `Project URL` → cole em `NEXT_PUBLIC_SUPABASE_URL`
-   - `anon public` (em Project API Keys) → cole em `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-
----
-
-## Passo 5 — Criar as tabelas no Supabase
-
-1. No Supabase, vá em **SQL Editor** (menu lateral)
-2. Clique em **New Query**
-3. Abra o arquivo `database/schema.sql` deste projeto
-4. Copie TODO o conteúdo e cole no editor do Supabase
-5. Clique em **Run** (ícone de play)
-6. Deve aparecer "Success" em verde
-
----
-
-## Passo 6 — Rodar o projeto
-
+## 4) Rodar localmente
 ```bash
-pnpm dev
+npm run dev
 ```
 
-Abra http://localhost:3000 no navegador.
+Acesse: `http://localhost:3000`
 
-Você será redirecionado para a tela de login do Clerk.
-Crie uma conta e você verá o Dashboard.
-
----
+## 5) Verificacoes recomendadas
+```bash
+npm run lint
+npm run build
+npm run test
+npm run test:e2e
+```
 
 ## Problemas comuns
-
-**Erro: "Invalid API Key"**
-→ Verifique se copiou as chaves corretamente no `.env.local` (sem espaços extras)
-
-**Tela em branco após login**
-→ Verifique se rodou o SQL do schema.sql no Supabase
-
-**Erro "Module not found"**
-→ Rode `pnpm install` novamente no terminal
+- `Nao autorizado` nas rotas privadas:
+  - confirme chaves do Clerk e sessao ativa.
+- Erro de coluna/tabela inexistente:
+  - alguma migracao nao foi executada.
+- Stripe nao abre checkout/portal:
+  - confira `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` e price IDs.

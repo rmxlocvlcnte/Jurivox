@@ -6,7 +6,7 @@ import { HonorarioForm } from '@/components/financeiro/HonorarioForm'
 import { ExportButton } from '@/components/export-button'
 import {
   DollarSign, TrendingUp, TrendingDown, Plus,
-  ArrowUpCircle, ArrowDownCircle, FileText, CreditCard,
+  ArrowUpCircle, ArrowDownCircle, FileText, CreditCard, Upload,
 } from 'lucide-react'
 
 const EXPORT_MOVS = [
@@ -115,6 +115,13 @@ export default async function FinanceiroPage() {
           {(honorarios?.length ?? 0) > 0 && (
             <ExportButton data={honorarios ?? []} columns={EXPORT_HONORARIOS} filename="Honorários - JurisFlow" label="Hon.:" />
           )}
+          <Link
+            href="/financeiro/importar-ofx"
+            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+          >
+            <Upload className="w-4 h-4" />
+            Importar OFX
+          </Link>
           <Link
             href="/financeiro/relatorio"
             className="px-3 py-2 text-sm font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"

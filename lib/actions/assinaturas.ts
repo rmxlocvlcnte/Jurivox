@@ -1,18 +1,17 @@
 'use server'
 
+import crypto from 'crypto'
 import { getAuthContext } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { exigirCargo, CARGOS_OPERACIONAIS } from '@/lib/permissoes'
-import { createAdminClient } from '@/lib/supabase/admin'
-import crypto from 'crypto'
 
 const AssinaturaSchema = z.object({
-  titulo: z.string().min(2, 'Título obrigatório.').max(200),
-  conteudo_documento: z.string().min(10, 'Conteúdo obrigatório.'),
-  email_destinatario: z.string().email('E-mail inválido.'),
-  nome_destinatario: z.string().min(2, 'Nome obrigatório.'),
+  titulo: z.string().min(2, 'Titulo obrigatorio.').max(200),
+  conteudo_documento: z.string().min(10, 'Conteudo obrigatorio.'),
+  email_destinatario: z.string().email('E-mail invalido.'),
+  nome_destinatario: z.string().min(2, 'Nome obrigatorio.'),
   mensagem: z.string().max(500).optional().nullable(),
   processo_id: z.string().uuid().optional().nullable(),
   cliente_id: z.string().uuid().optional().nullable(),
@@ -22,7 +21,7 @@ export async function criarSolicitacaoAssinatura(formData: FormData) {
   const { escritorioId, membroId, cargo, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/sign-in')
 
-  const perm = exigirCargo(cargo, CARGOS_OPERACIONAIS, 'Sem permissão para criar solicitações de assinatura.')
+  const perm = exigirCargo(cargo, CARGOS_OPERACIONAIS, 'Sem permissao para criar solicitacoes de assinatura.')
   if (perm) return perm
 
   const parse = AssinaturaSchema.safeParse({
@@ -35,33 +34,31 @@ export async function criarSolicitacaoAssinatura(formData: FormData) {
     cliente_id: (formData.get('cliente_id') as string) || null,
   })
 
-  if (!parse.success) return { erro: parse.error.issues[0]?.message ?? 'Dados inválidos.' }
+  if (!parse.success) return { erro: parse.error.issues[0]?.message ?? 'Dados invalidos.' }
 
-  // Gera token seguro único
-  const hash_token = crypto.randomBytes(32).toString('hex')
-
-  const expira_em = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+  const hashToken = crypto.randomBytes(32).toString('hex')
+  const expiraEm = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
 
   const { data: assinatura, error } = await supabase
     .from('assinaturas_digitais')
     .insert({
       ...parse.data,
-      hash_token,
-      expira_em,
+      hash_token: hashToken,
+      expira_em: expiraEm,
       escritorio_id: escritorioId,
       criado_por: membroId,
+      status: 'pendente',
     })
     .select('id')
     .single()
 
   if (error || !assinatura) {
     console.error('Erro ao criar assinatura:', error)
-    return { erro: 'Não foi possível criar a solicitação.' }
+    return { erro: 'Nao foi possivel criar a solicitacao.' }
   }
 
-  // Envia e-mail com link de assinatura
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-  const linkAssinatura = `${baseUrl}/assinar/${hash_token}`
+  const linkAssinatura = `${baseUrl}/assinar/${hashToken}`
 
   if (process.env.RESEND_API_KEY) {
     try {
@@ -70,22 +67,21 @@ export async function criarSolicitacaoAssinatura(formData: FormData) {
       await resend.emails.send({
         from: process.env.RESEND_FROM ?? 'JurisFlow <no-reply@jurisflow.com.br>',
         to: parse.data.email_destinatario,
-        subject: `Documento aguardando sua assinatura: ${parse.data.titulo}`,
+        subject: `Documento aguardando assinatura: ${parse.data.titulo}`,
         html: `
-          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #1e293b;">Solicitação de Assinatura Digital</h2>
-            <p>Olá, <strong>${parse.data.nome_destinatario}</strong>!</p>
-            <p>Você recebeu um documento para assinar digitalmente:</p>
-            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 20px 0;">
+          <div style="font-family: sans-serif; max-width: 620px; margin: 0 auto;">
+            <h2 style="color: #0f172a;">Solicitacao de Assinatura Digital</h2>
+            <p>Ola, <strong>${parse.data.nome_destinatario}</strong>!</p>
+            <p>Voce recebeu um documento para assinatura eletronica:</p>
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px; margin:16px 0;">
               <strong>${parse.data.titulo}</strong>
-              ${parse.data.mensagem ? `<p style="color: #64748b; margin-top: 8px;">${parse.data.mensagem}</p>` : ''}
+              ${parse.data.mensagem ? `<p style="color:#64748b; margin-top:8px;">${parse.data.mensagem}</p>` : ''}
             </div>
-            <a href="${linkAssinatura}"
-               style="display: inline-block; background: #f59e0b; color: #1e293b; font-weight: bold; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin: 8px 0;">
-              Assinar Documento
+            <a href="${linkAssinatura}" style="display:inline-block; background:#f59e0b; color:#0f172a; font-weight:700; padding:12px 22px; border-radius:8px; text-decoration:none;">
+              Ler e assinar documento
             </a>
-            <p style="color: #94a3b8; font-size: 12px; margin-top: 20px;">
-              Este link expira em 30 dias. Ao assinar, você confirma a leitura e concordância com o conteúdo do documento.
+            <p style="color:#94a3b8; font-size:12px; margin-top:16px;">
+              Este link expira em 30 dias. O sistema registra data/hora, IP e user-agent como trilha probatoria.
             </p>
           </div>
         `,
@@ -96,14 +92,14 @@ export async function criarSolicitacaoAssinatura(formData: FormData) {
   }
 
   revalidatePath('/assinaturas')
-  redirect(`/assinaturas`)
+  redirect('/assinaturas')
 }
 
 export async function cancelarAssinatura(id: string) {
   const { escritorioId, cargo, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/sign-in')
 
-  const perm = exigirCargo(cargo, CARGOS_OPERACIONAIS, 'Sem permissão.')
+  const perm = exigirCargo(cargo, CARGOS_OPERACIONAIS, 'Sem permissao.')
   if (perm) return perm
 
   const { error } = await supabase
@@ -112,50 +108,8 @@ export async function cancelarAssinatura(id: string) {
     .eq('id', id)
     .eq('escritorio_id', escritorioId)
 
-  if (error) return { erro: 'Não foi possível cancelar.' }
+  if (error) return { erro: 'Nao foi possivel cancelar.' }
 
   revalidatePath('/assinaturas')
   return { sucesso: true }
-}
-
-// Chamado pela página pública /assinar/[hash]
-export async function registrarAssinatura(hash: string, ip: string, userAgent: string) {
-  const supabase = createAdminClient()
-
-  const { data: assinatura } = await supabase
-    .from('assinaturas_digitais')
-    .select('id, status, expira_em')
-    .eq('hash_token', hash)
-    .single()
-
-  if (!assinatura) return { erro: 'Documento não encontrado.' }
-  if (assinatura.status !== 'pendente' && assinatura.status !== 'visualizado') {
-    return { erro: 'Este documento já foi processado.' }
-  }
-  if (new Date(assinatura.expira_em) < new Date()) {
-    await supabase.from('assinaturas_digitais').update({ status: 'expirado' }).eq('id', assinatura.id)
-    return { erro: 'Este link de assinatura expirou.' }
-  }
-
-  const { error } = await supabase
-    .from('assinaturas_digitais')
-    .update({
-      status: 'assinado',
-      assinado_em: new Date().toISOString(),
-      ip_assinatura: ip,
-      user_agent: userAgent,
-    })
-    .eq('id', assinatura.id)
-
-  if (error) return { erro: 'Não foi possível registrar a assinatura.' }
-  return { sucesso: true }
-}
-
-export async function marcarVisualizado(hash: string) {
-  const supabase = createAdminClient()
-  await supabase
-    .from('assinaturas_digitais')
-    .update({ status: 'visualizado' })
-    .eq('hash_token', hash)
-    .eq('status', 'pendente')
 }

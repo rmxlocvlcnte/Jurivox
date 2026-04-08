@@ -1,9 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────
-// BACKUP — Exportação completa dos dados do escritório em JSON
-// GET /api/backup?formato=json|csv
-// Autenticado via Clerk. Requer cargo: socio ou admin.
-// ─────────────────────────────────────────────────────────────────────
-
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext } from '@/lib/auth'
 import { exigirCargo } from '@/lib/permissoes'
@@ -14,18 +8,22 @@ export async function GET(req: NextRequest) {
   const { escritorioId, cargo, supabase } = await getAuthContext()
 
   if (!escritorioId || !supabase) {
-    return NextResponse.json({ erro: 'Não autenticado.' }, { status: 401 })
+    return NextResponse.json({ erro: 'Nao autenticado.' }, { status: 401 })
   }
 
-  const perm = exigirCargo(cargo, CARGOS_BACKUP, 'Somente sócios e admins podem fazer backup.')
+  const perm = exigirCargo(cargo, CARGOS_BACKUP, 'Somente socios e admins podem fazer backup.')
   if (perm) return NextResponse.json(perm, { status: 403 })
 
-  const formato = req.nextUrl.searchParams.get('formato') ?? 'json'
+  const { data: processos } = await supabase
+    .from('processos')
+    .select('*')
+    .eq('escritorio_id', escritorioId)
+    .order('criado_em', { ascending: false })
 
-  // Busca todos os dados do escritório em paralelo
+  const processoIds = (processos ?? []).map((p: any) => p.id)
+
   const [
     { data: clientes },
-    { data: processos },
     { data: movimentacoes },
     { data: prazos },
     { data: contratos },
@@ -35,16 +33,17 @@ export async function GET(req: NextRequest) {
     { data: contas },
     { data: timesheet },
     { data: templates },
-    { data: documentos },
+    { data: movimentacoesFinanceiras },
     { data: membros },
   ] = await Promise.all([
     supabase.from('clientes').select('*').eq('escritorio_id', escritorioId).order('nome'),
-    supabase.from('processos').select('*').eq('escritorio_id', escritorioId).order('criado_em', { ascending: false }),
-    supabase.from('movimentacoes').select('*').eq('processo_id.processos.escritorio_id', escritorioId).limit(5000),
+    processoIds.length
+      ? supabase.from('movimentacoes').select('*').in('processo_id', processoIds).limit(5000)
+      : Promise.resolve({ data: [] as any[] }),
     supabase.from('prazos').select('*').eq('escritorio_id', escritorioId).order('data_vencimento'),
     supabase.from('contratos').select('*').eq('escritorio_id', escritorioId).order('criado_em', { ascending: false }),
     supabase.from('honorarios').select('*').eq('escritorio_id', escritorioId).order('criado_em', { ascending: false }),
-    supabase.from('pagamentos_honorarios').select('*').limit(5000),
+    supabase.from('pagamentos_honorarios').select('*').eq('escritorio_id', escritorioId).limit(5000),
     supabase.from('agenda_eventos').select('*').eq('escritorio_id', escritorioId).order('data_inicio'),
     supabase.from('contas_receber').select('*').eq('escritorio_id', escritorioId).order('criado_em', { ascending: false }),
     supabase.from('timesheet_lancamentos').select('*').eq('escritorio_id', escritorioId).order('data', { ascending: false }),
@@ -55,7 +54,7 @@ export async function GET(req: NextRequest) {
 
   const backup = {
     exportado_em: new Date().toISOString(),
-    versao: '1.0',
+    versao: '1.1',
     escritorio_id: escritorioId,
     resumo: {
       clientes: clientes?.length ?? 0,
@@ -77,13 +76,18 @@ export async function GET(req: NextRequest) {
       contratos: contratos ?? [],
       honorarios: honorarios ?? [],
       pagamentos_honorarios: pagamentos ?? [],
-      movimentacoes_financeiras: documentos ?? [],
+      movimentacoes_financeiras: movimentacoesFinanceiras ?? [],
       agenda_eventos: agenda ?? [],
       contas_receber: contas ?? [],
       timesheet_lancamentos: timesheet ?? [],
       templates: templates ?? [],
       membros: membros ?? [],
     },
+  }
+
+  const formato = req.nextUrl.searchParams.get('formato') ?? 'json'
+  if (formato !== 'json') {
+    return NextResponse.json({ erro: 'Formato nao suportado. Use formato=json.' }, { status: 400 })
   }
 
   const dataStr = new Date().toISOString().split('T')[0]

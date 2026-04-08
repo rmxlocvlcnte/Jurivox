@@ -11,6 +11,7 @@ import { emailNovoPrazo } from '@/lib/notificacoes/email'
 import { whatsappNovoPrazo } from '@/lib/notificacoes/whatsapp'
 import { z } from 'zod'
 import { exigirCargo, CARGOS_OPERACIONAIS } from '@/lib/permissoes'
+import { calcularDataVencimentoAsync } from '@/lib/utils/prazos'
 
 const PrazoSchema = z.object({
   processo_id: z.string().uuid('Processo inválido.'),
@@ -19,26 +20,6 @@ const PrazoSchema = z.object({
   quantidade_dias: z.number().int().min(1, 'Quantidade inválida.').max(3650),
   dias_uteis: z.boolean().default(true),
 })
-
-function calcularVencimento(dataInicio: string, quantidadeDias: number, diasUteis: boolean): string {
-  const inicio = new Date(dataInicio + 'T12:00:00')
-  let data = new Date(inicio)
-  let diasContados = 0
-
-  while (diasContados < quantidadeDias) {
-    data.setDate(data.getDate() + 1)
-    if (diasUteis) {
-      const diaSemana = data.getDay()
-      if (diaSemana !== 0 && diaSemana !== 6) {
-        diasContados++
-      }
-    } else {
-      diasContados++
-    }
-  }
-
-  return data.toISOString().split('T')[0]
-}
 
 // ---- CRIAR PRAZO ----
 export async function criarPrazo(formData: FormData) {
@@ -71,7 +52,7 @@ export async function criarPrazo(formData: FormData) {
 
   if (!processo) return { erro: 'Processo não encontrado.' }
 
-  const dataVencimento = calcularVencimento(dados.data_inicio, dados.quantidade_dias, dados.dias_uteis)
+  const dataVencimento = await calcularDataVencimentoAsync(dados.data_inicio, dados.quantidade_dias, dados.dias_uteis)
 
   const { error } = await supabase
     .from('prazos')

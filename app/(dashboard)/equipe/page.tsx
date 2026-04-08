@@ -1,13 +1,27 @@
 import { getAuthContext } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import { enviarConvite, removerMembro, editarCargo } from '@/lib/actions/equipe'
-import { Users, Crown, Briefcase, GraduationCap, ShieldCheck, Mail, Clock, Plus, Send, Trash2, Pencil } from 'lucide-react'
+import {
+  enviarConvite,
+  removerMembro,
+  editarCargo,
+  cancelarConvite,
+} from '@/lib/actions/equipe'
+import {
+  Users,
+  Mail,
+  Clock,
+  Send,
+  Trash2,
+  Pencil,
+  UserPlus,
+  Link as LinkIcon,
+} from 'lucide-react'
 
-const CARGO_CONFIG: Record<string, { label: string; cls: string; icon: any }> = {
-  socio: { label: 'Sócio', cls: 'bg-amber-100 text-amber-700', icon: Crown },
-  admin: { label: 'Admin', cls: 'bg-purple-100 text-purple-700', icon: ShieldCheck },
-  advogado: { label: 'Advogado', cls: 'bg-blue-100 text-blue-700', icon: Briefcase },
-  estagiario: { label: 'Estagiário', cls: 'bg-green-100 text-green-700', icon: GraduationCap },
+const CARGO_LABEL: Record<string, string> = {
+  socio: 'Socio',
+  admin: 'Admin',
+  advogado: 'Advogado',
+  estagiario: 'Estagiario',
 }
 
 export default async function EquipePage() {
@@ -16,18 +30,24 @@ export default async function EquipePage() {
 
   const podeGerenciar = meuCargo === 'socio' || meuCargo === 'admin'
 
-  const [{ data: membros }, { data: escritorio }] = await Promise.all([
+  const [{ data: membros }, { data: escritorio }, { data: convitesPendentes }] = await Promise.all([
     supabase
       .from('membros_escritorio')
-      .select('id, nome, email, cargo, criado_em')
+      .select('id, nome, email, cargo, criado_em, ativo')
       .eq('escritorio_id', escritorioId)
       .order('criado_em', { ascending: true }),
-
     supabase
       .from('escritorios')
       .select('id, nome, cnpj, email, telefone')
       .eq('id', escritorioId)
       .single(),
+    supabase
+      .from('convites_equipe')
+      .select('id, nome_convidado, email_convidado, cargo_convidado, criado_em, expira_em, status')
+      .eq('escritorio_id', escritorioId)
+      .eq('status', 'pendente')
+      .order('criado_em', { ascending: false })
+      .limit(20),
   ])
 
   async function handleConvite(formData: FormData) {
@@ -36,17 +56,16 @@ export default async function EquipePage() {
   }
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="mx-auto max-w-5xl space-y-6">
       <div>
-        <h1 className="text-xl md:text-2xl font-bold text-slate-900">Equipe</h1>
-        <p className="text-slate-500 text-sm mt-1">Membros e convites do escritório</p>
+        <h1 className="text-2xl font-bold text-slate-900">Equipe</h1>
+        <p className="mt-1 text-sm text-slate-500">Membros, cargos e convites do escritorio</p>
       </div>
 
-      {/* Info do escritório */}
       {escritorio && (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-          <h2 className="text-sm font-semibold text-slate-700 mb-3">Escritório</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="mb-3 text-sm font-semibold text-slate-700">Escritorio</h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <p className="text-xs text-slate-500">Nome</p>
               <p className="text-sm font-semibold text-slate-900">{escritorio.nome}</p>
@@ -73,184 +92,193 @@ export default async function EquipePage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
-        {/* Lista de membros */}
-        <div className="xl:col-span-3 bg-white rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-            <h2 className="font-semibold text-slate-900 flex items-center gap-2">
-              <Users className="w-4 h-4 text-slate-400" />
-              Membros ({membros?.length ?? 0})
-            </h2>
-            {!podeGerenciar && (
-              <span className="text-xs text-slate-400">Somente sócios e admins podem gerenciar</span>
-            )}
-          </div>
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
+        <div className="space-y-4 xl:col-span-3">
+          <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+              <h2 className="flex items-center gap-2 font-semibold text-slate-900">
+                <Users className="h-4 w-4 text-slate-400" />
+                Membros ({membros?.length ?? 0})
+              </h2>
+            </div>
 
-          <div className="divide-y divide-slate-100">
-            {!membros?.length ? (
-              <div className="px-5 py-8 text-center text-slate-400 text-sm">
-                Nenhum membro encontrado.
-              </div>
-            ) : (
-              membros.map((m) => {
-                const cfg = CARGO_CONFIG[m.cargo ?? 'advogado'] ?? CARGO_CONFIG.advogado
-                const Icon = cfg.icon
-                const isEu = m.id === membroId
-
-                return (
-                  <div key={m.id} className={`px-5 py-4 ${isEu ? 'bg-amber-50' : ''}`}>
-                    <div className="flex items-center gap-3">
-                      {/* Avatar */}
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shrink-0">
-                        <span className="text-white font-bold text-sm">
+            <div className="divide-y divide-slate-100">
+              {!membros?.length ? (
+                <div className="px-5 py-8 text-center text-sm text-slate-400">Nenhum membro encontrado.</div>
+              ) : (
+                membros.map((m) => {
+                  const isEu = m.id === membroId
+                  return (
+                    <div key={m.id} className={`px-5 py-4 ${isEu ? 'bg-amber-50' : ''}`}>
+                      <div className="flex items-start gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500 font-bold text-white">
                           {m.nome.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="text-sm font-semibold text-slate-900">{m.nome}</p>
+                            {isEu && <span className="text-xs font-medium text-amber-700">(voce)</span>}
+                            {!m.ativo && <span className="text-xs text-red-600">inativo</span>}
+                          </div>
+                          <p className="mt-0.5 flex items-center gap-1 text-xs text-slate-500">
+                            <Mail className="h-3 w-3" />
+                            {m.email}
+                          </p>
+                          <p className="mt-0.5 flex items-center gap-1 text-xs text-slate-400">
+                            <Clock className="h-3 w-3" />
+                            Desde {new Date(m.criado_em).toLocaleDateString('pt-BR')}
+                          </p>
+                        </div>
+                        <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">
+                          {CARGO_LABEL[m.cargo] ?? m.cargo}
                         </span>
                       </div>
 
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-sm font-semibold text-slate-900">{m.nome}</p>
-                          {isEu && <span className="text-xs text-amber-600 font-medium">(você)</span>}
-                        </div>
-                        <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-                          <Mail className="w-3 h-3" />
-                          {m.email}
-                        </p>
-                        <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-                          <Clock className="w-3 h-3" />
-                          Desde {new Date(m.criado_em).toLocaleDateString('pt-BR')}
-                        </p>
-                      </div>
-
-                      {/* Cargo badge */}
-                      <span className={`text-xs font-medium px-2 py-1 rounded-full flex items-center gap-1 shrink-0 ${cfg.cls}`}>
-                        <Icon className="w-3 h-3" />
-                        {cfg.label}
-                      </span>
-                    </div>
-
-                    {/* Ações de gestão (só para admins/sócios, e não para si mesmo) */}
-                    {podeGerenciar && !isEu && (
-                      <div className="flex items-center gap-2 mt-3 pl-13">
-                        {/* Editar cargo */}
-                        <form action={async (fd: FormData) => {
-                          'use server'
-                          await editarCargo(m.id, fd.get('cargo') as string)
-                        }} className="flex items-center gap-2">
-                          <select
-                            name="cargo"
-                            defaultValue={m.cargo ?? 'advogado'}
-                            className="text-xs border border-slate-200 rounded-lg px-2 py-1 outline-none focus:ring-1 focus:ring-amber-400 bg-white"
+                      {podeGerenciar && !isEu && (
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          <form
+                            action={async (fd: FormData) => {
+                              'use server'
+                              await editarCargo(m.id, fd.get('cargo') as string)
+                            }}
+                            className="flex items-center gap-2"
                           >
-                            <option value="socio">Sócio</option>
-                            <option value="admin">Admin</option>
-                            <option value="advogado">Advogado</option>
-                            <option value="estagiario">Estagiário</option>
-                          </select>
-                          <button
-                            type="submit"
-                            className="flex items-center gap-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded-lg transition-colors"
-                          >
-                            <Pencil className="w-3 h-3" /> Atualizar
-                          </button>
-                        </form>
+                            <select
+                              name="cargo"
+                              defaultValue={m.cargo ?? 'advogado'}
+                              className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs"
+                            >
+                              <option value="socio">Socio</option>
+                              <option value="admin">Admin</option>
+                              <option value="advogado">Advogado</option>
+                              <option value="estagiario">Estagiario</option>
+                            </select>
+                            <button
+                              type="submit"
+                              className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2 py-1 text-xs text-slate-700 hover:bg-slate-200"
+                            >
+                              <Pencil className="h-3 w-3" />
+                              Atualizar
+                            </button>
+                          </form>
 
-                        {/* Remover membro */}
-                        <form action={async () => {
-                          'use server'
-                          await removerMembro(m.id)
-                        }}>
-                          <button
-                            type="submit"
-                            className="flex items-center gap-1 text-xs bg-red-50 hover:bg-red-100 text-red-600 px-2 py-1 rounded-lg transition-colors"
-                            onClick={(e) => {
-                              if (!confirm(`Remover ${m.nome} da equipe?`)) e.preventDefault()
+                          <form
+                            action={async () => {
+                              'use server'
+                              await removerMembro(m.id)
                             }}
                           >
-                            <Trash2 className="w-3 h-3" /> Remover
-                          </button>
-                        </form>
-                      </div>
+                            <button
+                              type="submit"
+                              className="inline-flex items-center gap-1 rounded-lg bg-red-50 px-2 py-1 text-xs text-red-600 hover:bg-red-100"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                              Remover
+                            </button>
+                          </form>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+              <h2 className="flex items-center gap-2 font-semibold text-slate-900">
+                <LinkIcon className="h-4 w-4 text-slate-400" />
+                Convites Pendentes ({convitesPendentes?.length ?? 0})
+              </h2>
+            </div>
+            <div className="divide-y divide-slate-100">
+              {!convitesPendentes?.length ? (
+                <div className="px-5 py-6 text-sm text-slate-400">Sem convites pendentes.</div>
+              ) : (
+                convitesPendentes.map((convite) => (
+                  <div key={convite.id} className="flex items-center gap-3 px-5 py-3">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-slate-900">{convite.nome_convidado}</p>
+                      <p className="text-xs text-slate-500">{convite.email_convidado}</p>
+                      <p className="mt-0.5 text-xs text-slate-400">
+                        Cargo: {CARGO_LABEL[convite.cargo_convidado] ?? convite.cargo_convidado}
+                        {' · '}
+                        Expira em {new Date(convite.expira_em).toLocaleDateString('pt-BR')}
+                      </p>
+                    </div>
+                    {podeGerenciar && (
+                      <form
+                        action={async () => {
+                          'use server'
+                          await cancelarConvite(convite.id)
+                        }}
+                      >
+                        <button
+                          type="submit"
+                          className="rounded-lg bg-red-50 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-100"
+                        >
+                          Cancelar
+                        </button>
+                      </form>
                     )}
                   </div>
-                )
-              })
-            )}
+                ))
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Painel lateral: convidar + info */}
-        <div className="xl:col-span-2 space-y-4">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-            <h2 className="font-semibold text-slate-900 mb-1 flex items-center gap-2">
-              <Plus className="w-4 h-4" /> Convidar Membro
+        <div className="space-y-4 xl:col-span-2">
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="mb-1 flex items-center gap-2 font-semibold text-slate-900">
+              <UserPlus className="h-4 w-4" />
+              Convidar membro
             </h2>
-            <p className="text-xs text-slate-400 mb-4">
-              Envia um e-mail de convite com o link de cadastro.
-            </p>
+            <p className="mb-4 text-xs text-slate-500">O convidado recebe um link tokenizado para aceitar e vincular automaticamente.</p>
             <form action={handleConvite} className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Nome *</label>
+                <label className="mb-1 block text-xs font-medium text-slate-600">Nome *</label>
                 <input
                   name="nome"
                   type="text"
                   required
                   placeholder="Nome completo"
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400"
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">E-mail *</label>
+                <label className="mb-1 block text-xs font-medium text-slate-600">E-mail *</label>
                 <input
                   name="email"
                   type="email"
                   required
                   placeholder="email@exemplo.com"
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400"
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Cargo</label>
+                <label className="mb-1 block text-xs font-medium text-slate-600">Cargo</label>
                 <select
                   name="cargo"
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400"
                 >
                   <option value="advogado">Advogado</option>
-                  <option value="estagiario">Estagiário</option>
-                  <option value="socio">Sócio</option>
+                  <option value="estagiario">Estagiario</option>
                   <option value="admin">Admin</option>
+                  <option value="socio">Socio</option>
                 </select>
               </div>
               <button
                 type="submit"
-                className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold py-2.5 rounded-lg transition-colors text-sm"
+                disabled={!podeGerenciar}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-amber-500 py-2.5 text-sm font-semibold text-slate-900 hover:bg-amber-600 disabled:opacity-60"
               >
-                <Send className="w-4 h-4" /> Enviar Convite
+                <Send className="h-4 w-4" />
+                Enviar convite
               </button>
             </form>
           </div>
-
-          <div className="bg-blue-50 rounded-xl border border-blue-100 p-4">
-            <p className="text-xs font-semibold text-blue-800 mb-1">Como funciona?</p>
-            <ol className="text-xs text-blue-700 space-y-1 list-decimal list-inside">
-              <li>Envie o convite por e-mail</li>
-              <li>O convidado acessa o link e cria a conta</li>
-              <li>No onboarding, informa o nome do escritório</li>
-              <li>Você confirma o acesso aqui</li>
-            </ol>
-          </div>
-
-          {podeGerenciar && (
-            <div className="bg-amber-50 rounded-xl border border-amber-100 p-4">
-              <p className="text-xs font-semibold text-amber-800 mb-1">Permissões de cargo</p>
-              <ul className="text-xs text-amber-700 space-y-1">
-                <li><strong>Sócio / Admin</strong> — gerenciam equipe e têm acesso total</li>
-                <li><strong>Advogado</strong> — acesso completo, sem gestão de equipe</li>
-                <li><strong>Estagiário</strong> — acesso limitado de leitura</li>
-              </ul>
-            </div>
-          )}
         </div>
       </div>
     </div>
