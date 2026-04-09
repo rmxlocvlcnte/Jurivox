@@ -54,7 +54,7 @@ export default async function ConvitePage({ params, searchParams }: PageProps) {
         ) : (
           <>
             <p className="mt-2 text-sm text-slate-600">
-              Escritorio: <strong>{(convite.escritorios as any)?.nome ?? 'JurisFlow'}</strong>
+              Escritorio: <strong>{(convite.escritorios as any)?.nome ?? 'Jurivox'}</strong>
             </p>
             <p className="mt-1 text-sm text-slate-600">
               Cargo: <strong>{convite.cargo_convidado}</strong>

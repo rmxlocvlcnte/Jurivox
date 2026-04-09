@@ -73,7 +73,7 @@ export default async function PrazosPage({
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {lista.length > 0 && (
-            <ExportButton data={lista} columns={EXPORT_COLS} filename="Prazos - JurisFlow" />
+            <ExportButton data={lista} columns={EXPORT_COLS} filename="Prazos - Jurivox" />
           )}
           <Link
             href="/prazos/novo"

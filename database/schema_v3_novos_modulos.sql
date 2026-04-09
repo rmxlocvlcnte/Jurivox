@@ -1,5 +1,5 @@
 -- =============================================
--- SCHEMA V3 — JurisFlow: Novos Módulos
+-- SCHEMA V3 — Jurivox: Novos Módulos
 -- Execute no Supabase SQL Editor após schema.sql e schema_v2
 -- =============================================
 

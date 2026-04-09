@@ -57,7 +57,7 @@ export default async function ContratosPage({
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {!!contratos?.length && (
-            <ExportButton data={contratos ?? []} columns={EXPORT_COLS} filename="Contratos - JurisFlow" />
+            <ExportButton data={contratos ?? []} columns={EXPORT_COLS} filename="Contratos - Jurivox" />
           )}
           <Link
             href="/contratos/novo"

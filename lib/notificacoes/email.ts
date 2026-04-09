@@ -9,7 +9,7 @@ function getResend() {
   return new Resend(key)
 }
 
-const REMETENTE = process.env.RESEND_FROM_EMAIL ?? 'JurisFlow <noreply@jurisflow.com.br>'
+const REMETENTE = process.env.RESEND_FROM_EMAIL ?? 'Jurivox <noreply@jurivox.com.br>'
 
 // -----------------------------------------------
 // E-mail: Nova movimentação no processo
@@ -60,7 +60,7 @@ export async function emailNovaMovimentacao({
               <div style="display:flex;align-items:center;gap:12px;">
                 <div style="background:linear-gradient(135deg,#f59e0b,#d97706);width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;">⚖️</div>
                 <div>
-                  <h1 style="margin:0;color:#fff;font-size:22px;font-weight:700;letter-spacing:-0.5px;">JurisFlow</h1>
+                  <h1 style="margin:0;color:#fff;font-size:22px;font-weight:700;letter-spacing:-0.5px;">Jurivox</h1>
                   <p style="margin:0;color:#94a3b8;font-size:12px;">${nomeEscritorio}</p>
                 </div>
               </div>
@@ -95,7 +95,7 @@ export async function emailNovaMovimentacao({
             <!-- Footer -->
             <div style="background:#f8fafc;padding:20px 40px;border-top:1px solid #e2e8f0;">
               <p style="margin:0;color:#94a3b8;font-size:12px;text-align:center;">
-                © 2025 JurisFlow · Este e-mail foi enviado automaticamente. Não responda a este endereço.
+                © 2025 Jurivox · Este e-mail foi enviado automaticamente. Não responda a este endereço.
               </p>
             </div>
           </div>
@@ -150,7 +150,7 @@ export async function emailNovoPrazo({
           <div style="max-width:600px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
 
             <div style="background:linear-gradient(135deg,#0d1b3e,#1a3a6e);padding:32px 40px;">
-              <h1 style="margin:0;color:#fff;font-size:22px;font-weight:700;">⚖️ JurisFlow</h1>
+              <h1 style="margin:0;color:#fff;font-size:22px;font-weight:700;">⚖️ Jurivox</h1>
               <p style="margin:4px 0 0;color:#94a3b8;font-size:13px;">Alerta de Prazo</p>
             </div>
 
@@ -175,7 +175,7 @@ export async function emailNovoPrazo({
 
             <div style="background:#f8fafc;padding:20px 40px;border-top:1px solid #e2e8f0;">
               <p style="margin:0;color:#94a3b8;font-size:12px;text-align:center;">
-                © 2025 JurisFlow · Enviado automaticamente pelo sistema.
+                © 2025 Jurivox · Enviado automaticamente pelo sistema.
               </p>
             </div>
           </div>

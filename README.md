@@ -1,4 +1,4 @@
-# JurisFlow
+# Jurivox
 
 Plataforma SaaS para gestao juridica de escritorios de advocacia, com:
 - processos, clientes, prazos e agenda

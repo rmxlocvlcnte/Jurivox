@@ -26,7 +26,7 @@ export default function OnboardingPage() {
               <Scale className="w-8 h-8 text-white" />
             </div>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">Bem-vindo ao JurisFlow!</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Bem-vindo ao Jurivox!</h1>
           <p className="text-slate-500 mt-2 text-sm">
             Vamos configurar seu escritório. Isso leva menos de 1 minuto.
           </p>

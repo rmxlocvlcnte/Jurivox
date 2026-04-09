@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
-  title: 'Politica de Privacidade | JurisFlow',
-  description: 'Como o JurisFlow coleta, usa e protege dados pessoais.',
+  title: 'Politica de Privacidade | Jurivox',
+  description: 'Como o Jurivox coleta, usa e protege dados pessoais.',
 }
 
 export default function PrivacidadePage() {
@@ -49,8 +49,8 @@ export default function PrivacidadePage() {
           <h2 className="text-lg font-semibold text-slate-900">5. Contato</h2>
           <p>
             Demandas de privacidade e DPO:{' '}
-            <a href="mailto:dpo@jurisflow.com.br" className="text-blue-600 hover:underline">
-              dpo@jurisflow.com.br
+            <a href="mailto:dpo@jurivox.com.br" className="text-blue-600 hover:underline">
+              dpo@jurivox.com.br
             </a>
             .
           </p>

@@ -23,7 +23,7 @@ export default function RootLoading() {
       />
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       <p style={{ color: '#64748b', fontSize: '14px', fontWeight: 500 }}>
-        Carregando JurisFlow...
+        Carregando Jurivox...
       </p>
     </div>
   )

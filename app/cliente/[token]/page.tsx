@@ -76,7 +76,7 @@ export default async function PortalClientePage({ params }: { params: Promise<{ 
           </div>
           <div>
             <p className="text-xs text-slate-500">Portal do Cliente</p>
-            <p className="text-sm font-semibold text-slate-900">{escritorio?.nome ?? 'JurisFlow'}</p>
+            <p className="text-sm font-semibold text-slate-900">{escritorio?.nome ?? 'Jurivox'}</p>
           </div>
         </div>
       </header>
@@ -147,7 +147,7 @@ export default async function PortalClientePage({ params }: { params: Promise<{ 
 
         {/* Rodapé */}
         <footer className="text-center text-xs text-slate-400 pt-4 border-t border-slate-100">
-          <p>Powered by JurisFlow • Link válido até {expira.toLocaleDateString('pt-BR')}</p>
+          <p>Powered by Jurivox • Link válido até {expira.toLocaleDateString('pt-BR')}</p>
           <p className="mt-1">Para dúvidas, entre em contato com seu advogado.</p>
         </footer>
       </main>

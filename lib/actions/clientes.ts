@@ -5,11 +5,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { exigirCargo, CARGOS_OPERACIONAIS } from '@/lib/permissoes'
-<<<<<<< HEAD
-import { verificarLimite } from '@/lib/limites'
-=======
 import { verificarLimitePlano } from '@/lib/planos-limites'
->>>>>>> f60585aaf4340e69156a99262218e51d8dbbf59c
 
 const ClienteSchema = z.object({
   nome: z.string().min(2, 'O nome e obrigatorio.').max(200),
@@ -46,20 +42,17 @@ export async function criarCliente(formData: FormData) {
   const perm = exigirCargo(cargo, CARGOS_OPERACIONAIS, 'Sem permissao para criar clientes.')
   if (perm) return perm
 
-  const limite = await verificarLimite(escritorioId, 'clientes', supabase)
-  if (limite.atingido) return { erro: limite.mensagem! }
-
   const parse = ClienteSchema.safeParse(parseCliente(formData))
   if (!parse.success) {
     return { erro: parse.error.issues[0]?.message ?? 'Dados invalidos.' }
   }
 
-  const limite = await verificarLimitePlano({
+  const limitePlano = await verificarLimitePlano({
     escritorioId,
     recurso: 'clientes',
     supabase,
   })
-  if (limite) return limite
+  if (limitePlano) return limitePlano
 
   const { data: cliente, error } = await supabase
     .from('clientes')

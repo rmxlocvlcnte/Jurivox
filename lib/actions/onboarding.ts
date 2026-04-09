@@ -4,7 +4,7 @@ import { auth, currentUser } from '@clerk/nextjs/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
-import { verificarLimitePlano } from '@/lib/planos-limites'
+import { verificarLimite } from '@/lib/limites'
 
 type OnboardingState = { erro: string | null }
 
@@ -44,12 +44,8 @@ export async function criarEscritorio(
       }
 
       if (!membroExistente) {
-        const limite = await verificarLimitePlano({
-          escritorioId: convite.escritorio_id,
-          recurso: 'membros',
-          supabase,
-        })
-        if (limite) return { erro: limite.erro }
+        const limite = await verificarLimite(convite.escritorio_id, 'membros', supabase)
+        if (limite.atingido) return { erro: limite.mensagem! }
 
         const nomeFallback = (formData.get('nome_usuario') as string)?.trim()
           || convite.nome_convidado
@@ -134,6 +130,6 @@ export async function criarEscritorio(
     return { erro: 'Nao foi possivel configurar seu perfil. Tente novamente.' }
   }
 
-  revalidatePath('/dashboard')
-  redirect('/dashboard')
+  revalidatePath('/bem-vindo')
+  redirect('/bem-vindo')
 }

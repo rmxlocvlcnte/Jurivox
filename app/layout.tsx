@@ -13,7 +13,7 @@ const geist = Geist({
 })
 
 export const metadata: Metadata = {
-  title: 'JurisFlow - Gestao Juridica',
+  title: 'Jurivox - Gestao Juridica',
   description: 'Sistema de gestao para escritorios de advocacia',
 }
 

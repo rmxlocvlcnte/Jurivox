@@ -6,13 +6,9 @@ import { getAuthContext } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { exigirCargo, CARGOS_FINANCEIRO } from '@/lib/permissoes'
-<<<<<<< HEAD
-import { verificarLimite } from '@/lib/limites'
-=======
 import { verificarLimitePlano } from '@/lib/planos-limites'
 
 const CARGOS_VALIDOS = ['socio', 'admin', 'advogado', 'estagiario']
->>>>>>> f60585aaf4340e69156a99262218e51d8dbbf59c
 
 export async function enviarConvite(formData: FormData) {
   const { escritorioId, membroId, cargo, supabase } = await getAuthContext()
@@ -20,9 +16,6 @@ export async function enviarConvite(formData: FormData) {
 
   const perm = exigirCargo(cargo, CARGOS_FINANCEIRO, 'Sem permissao para convidar membros.')
   if (perm) return perm
-
-  const limite = await verificarLimite(escritorioId, 'membros', supabase)
-  if (limite.atingido) return { erro: limite.mensagem! }
 
   const nomeConvidado = (formData.get('nome') as string)?.trim()
   const emailConvidado = (formData.get('email') as string)?.trim().toLowerCase()
@@ -42,13 +35,13 @@ export async function enviarConvite(formData: FormData) {
     .eq('status', 'pendente')
     .gt('expira_em', new Date().toISOString())
 
-  const limite = await verificarLimitePlano({
+  const limitePlano = await verificarLimitePlano({
     escritorioId,
     recurso: 'membros',
     supabase,
     adicionalUsado: pendentes ?? 0,
   })
-  if (limite) return limite
+  if (limitePlano) return limitePlano
 
   const { data: membroMesmoEmail } = await supabase
     .from('membros_escritorio')

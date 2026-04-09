@@ -1,5 +1,5 @@
 -- =============================================
--- SCHEMA DO BANCO DE DADOS — JurisFlow
+-- SCHEMA DO BANCO DE DADOS — Jurivox
 -- Execute este SQL no Supabase:
 -- Dashboard > SQL Editor > New Query > Cole e clique em Run
 -- =============================================

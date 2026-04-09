@@ -1,4 +1,4 @@
-# Guia de Instalacao - JurisFlow
+# Guia de Instalacao - Jurivox
 
 Siga na ordem. O sistema depende das migracoes versionadas.
 

@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'DPA | JurisFlow',
-  description: 'Acordo de Processamento de Dados (Data Processing Agreement) do JurisFlow.',
+  title: 'DPA | Jurivox',
+  description: 'Acordo de Processamento de Dados (Data Processing Agreement) do Jurivox.',
 }
 
 export default function DpaPage() {
@@ -15,7 +15,7 @@ export default function DpaPage() {
         <section>
           <h2 className="text-lg font-semibold text-slate-900">1. Partes</h2>
           <p>
-            O cliente do JurisFlow atua como Controlador dos dados de seus clientes. O JurisFlow atua como
+            O cliente do Jurivox atua como Controlador dos dados de seus clientes. O Jurivox atua como
             Operador, processando dados conforme instrucao do Controlador.
           </p>
         </section>
@@ -48,8 +48,8 @@ export default function DpaPage() {
           <h2 className="text-lg font-semibold text-slate-900">5. Contato juridico</h2>
           <p>
             Para solicitacao de DPA assinado e temas de compliance:{' '}
-            <a href="mailto:legal@jurisflow.com.br" className="text-blue-600 hover:underline">
-              legal@jurisflow.com.br
+            <a href="mailto:legal@jurivox.com.br" className="text-blue-600 hover:underline">
+              legal@jurivox.com.br
             </a>
             .
           </p>

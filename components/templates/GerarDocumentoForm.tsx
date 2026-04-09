@@ -59,7 +59,7 @@ export function GerarDocumentoForm({ templateId, templateNome, variaveis, proces
     doc.setTextColor(15, 23, 42)
     doc.setFontSize(10)
     doc.setFont('helvetica', 'bold')
-    doc.text('JurisFlow', margin, 10)
+    doc.text('Jurivox', margin, 10)
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(8)
     doc.text(new Date().toLocaleDateString('pt-BR'), pageWidth - margin, 10, { align: 'right' })
@@ -102,7 +102,7 @@ export function GerarDocumentoForm({ templateId, templateNome, variaveis, proces
       doc.setFontSize(7)
       doc.setTextColor(148, 163, 184)
       doc.text(
-        `JurisFlow · ${nome} · Página ${i} de ${pageCount}`,
+        `Jurivox · ${nome} · Página ${i} de ${pageCount}`,
         pageWidth / 2,
         pageHeight - 8,
         { align: 'center' }

@@ -1,17 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext } from '@/lib/auth'
 import { criarCheckoutSession, PLANOS } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function POST(req: NextRequest) {
-<<<<<<< HEAD
   const { escritorioId, mfaObrigatorio } = await getAuthContext({ redirecionar2FA: false })
-  if (mfaObrigatorio) return NextResponse.json({ erro: '2FA obrigatório.' }, { status: 403 })
-  if (!escritorioId) return NextResponse.json({ erro: 'Não autenticado.' }, { status: 401 })
-=======
-  const { escritorioId } = await getAuthContext()
+  if (mfaObrigatorio) return NextResponse.json({ erro: '2FA obrigatorio.' }, { status: 403 })
   if (!escritorioId) return NextResponse.json({ erro: 'Nao autenticado.' }, { status: 401 })
->>>>>>> f60585aaf4340e69156a99262218e51d8dbbf59c
 
   const body = await req.json().catch(() => ({}))
   const planoId = typeof body?.plano_id === 'string' ? body.plano_id : ''

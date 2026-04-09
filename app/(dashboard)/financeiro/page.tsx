@@ -110,10 +110,10 @@ export default async function FinanceiroPage() {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {(movimentacoes?.length ?? 0) > 0 && (
-            <ExportButton data={movimentacoes ?? []} columns={EXPORT_MOVS} filename="Movimentações - JurisFlow" />
+            <ExportButton data={movimentacoes ?? []} columns={EXPORT_MOVS} filename="Movimentações - Jurivox" />
           )}
           {(honorarios?.length ?? 0) > 0 && (
-            <ExportButton data={honorarios ?? []} columns={EXPORT_HONORARIOS} filename="Honorários - JurisFlow" label="Hon.:" />
+            <ExportButton data={honorarios ?? []} columns={EXPORT_HONORARIOS} filename="Honorários - Jurivox" label="Hon.:" />
           )}
           <Link
             href="/financeiro/importar-ofx"

@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
-  title: 'Termos de Uso | JurisFlow',
-  description: 'Termos e condicoes de uso da plataforma JurisFlow.',
+  title: 'Termos de Uso | Jurivox',
+  description: 'Termos e condicoes de uso da plataforma Jurivox.',
 }
 
 export default function TermosDeUsoPage() {
@@ -16,7 +16,7 @@ export default function TermosDeUsoPage() {
         <section>
           <h2 className="text-lg font-semibold text-slate-900">1. Escopo</h2>
           <p>
-            O JurisFlow e uma plataforma SaaS de gestao juridica para escritorios e profissionais do Direito.
+            O Jurivox e uma plataforma SaaS de gestao juridica para escritorios e profissionais do Direito.
             Ao usar a plataforma, voce concorda com estes termos.
           </p>
         </section>
@@ -40,7 +40,7 @@ export default function TermosDeUsoPage() {
         <section>
           <h2 className="text-lg font-semibold text-slate-900">4. Disponibilidade e limites</h2>
           <p>
-            O JurisFlow opera em regime de melhor esforco para alta disponibilidade. Recursos podem variar
+            O Jurivox opera em regime de melhor esforco para alta disponibilidade. Recursos podem variar
             conforme plano contratado e limites tecnicos aplicaveis.
           </p>
         </section>
@@ -49,8 +49,8 @@ export default function TermosDeUsoPage() {
           <h2 className="text-lg font-semibold text-slate-900">5. Contato</h2>
           <p>
             Para duvidas legais, entre em contato em{' '}
-            <a href="mailto:legal@jurisflow.com.br" className="text-blue-600 hover:underline">
-              legal@jurisflow.com.br
+            <a href="mailto:legal@jurivox.com.br" className="text-blue-600 hover:underline">
+              legal@jurivox.com.br
             </a>
             .
           </p>

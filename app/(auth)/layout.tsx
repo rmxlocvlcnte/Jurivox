@@ -31,7 +31,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             </div>
           </div>
           <h1 className="text-4xl font-bold tracking-tight text-gradient-shimmer mb-1">
-            JurisFlow
+            Jurivox
           </h1>
           <p className="text-slate-400 text-sm">Gestão jurídica simplificada</p>
         </div>
@@ -57,7 +57,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
         <p className="text-center text-xs text-slate-600 mt-6 opacity-0 animate-fade-in delay-500"
            style={{ animationFillMode: 'forwards' }}>
-          © 2025 JurisFlow · Todos os direitos reservados
+          © 2025 Jurivox · Todos os direitos reservados
         </p>
       </div>
     </div>

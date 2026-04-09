@@ -36,7 +36,7 @@ export default async function AssinarPage({ params }: { params: Promise<{ hash: 
             <Scale className="w-5 h-5 text-white" />
           </div>
           <div>
-            <p className="font-bold text-slate-900">JurisFlow</p>
+            <p className="font-bold text-slate-900">Jurivox</p>
             {escritorio?.nome && (
               <p className="text-xs text-slate-500">{escritorio.nome}</p>
             )}
@@ -114,7 +114,7 @@ export default async function AssinarPage({ params }: { params: Promise<{ hash: 
       </main>
 
       <footer className="text-center py-6 text-xs text-slate-400">
-        Assinatura eletrônica segura por JurisFlow · Documento válido conforme Lei nº 14.063/2020
+        Assinatura eletrônica segura por Jurivox · Documento válido conforme Lei nº 14.063/2020
       </footer>
     </div>
   )

@@ -7,7 +7,7 @@ export default function PaginaLogin() {
     <SignIn
       appearance={{
         elements: {
-          // Customizações visuais para combinar com o design do JurisFlow
+          // Customizações visuais para combinar com o design do Jurivox
           formButtonPrimary: 'bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold',
           card: 'shadow-lg border border-slate-200',
           headerTitle: 'text-slate-900',

@@ -20,7 +20,7 @@ export function BackupButton() {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `jurisflow-backup-${new Date().toISOString().split('T')[0]}.json`
+      a.download = `jurivox-backup-${new Date().toISOString().split('T')[0]}.json`
       a.click()
       URL.revokeObjectURL(url)
       toast.success('Backup baixado com sucesso!')

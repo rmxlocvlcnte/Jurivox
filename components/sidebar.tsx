@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -24,21 +24,6 @@ import {
 } from 'lucide-react'
 
 const navItems = [
-<<<<<<< HEAD
-  { href: '/dashboard',        label: 'Dashboard',        icon: LayoutDashboard },
-  { href: '/processos',        label: 'Processos',        icon: FolderOpen },
-  { href: '/clientes',         label: 'Clientes',         icon: Users },
-  { href: '/prazos',           label: 'Prazos',           icon: Calendar },
-  { href: '/agenda',           label: 'Agenda',           icon: Calendar },
-  { href: '/contratos',        label: 'Contratos',        icon: FileText },
-  { href: '/timesheet',        label: 'Timesheet',        icon: Clock },
-  { href: '/financeiro',       label: 'Financeiro',       icon: DollarSign },
-  { href: '/contas-receber',   label: 'Contas a Receber', icon: CreditCard },
-  { href: '/equipe',           label: 'Equipe',           icon: UserCheck },
-  { href: '/seguranca',        label: 'Segurança',        icon: ShieldCheck },
-  { href: '/ia',               label: 'Assistente IA',    icon: Bot },
-  { href: '/monitoramento',    label: 'Monitoramento',    icon: Radio },
-=======
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/processos', label: 'Processos', icon: FolderOpen },
   { href: '/clientes', label: 'Clientes', icon: Users },
@@ -49,21 +34,16 @@ const navItems = [
   { href: '/financeiro', label: 'Financeiro', icon: DollarSign },
   { href: '/contas-receber', label: 'Contas a Receber', icon: CreditCard },
   { href: '/equipe', label: 'Equipe', icon: UserCheck },
+  { href: '/seguranca', label: 'Seguranca', icon: ShieldCheck },
   { href: '/configuracoes', label: 'Configuracoes', icon: Settings2 },
   { href: '/ia', label: 'Assistente IA', icon: Bot },
   { href: '/monitoramento', label: 'Monitoramento', icon: Radio },
->>>>>>> f60585aaf4340e69156a99262218e51d8dbbf59c
 ]
 
 const GRUPOS = [
   { label: 'Principal', items: ['/dashboard', '/processos', '/clientes', '/prazos', '/agenda'] },
-<<<<<<< HEAD
-  { label: 'Gestão', items: ['/contratos', '/timesheet', '/financeiro', '/contas-receber', '/equipe', '/seguranca'] },
-  { label: 'IA & Automação', items: ['/ia', '/monitoramento'] },
-=======
-  { label: 'Gestao', items: ['/contratos', '/timesheet', '/financeiro', '/contas-receber', '/equipe', '/configuracoes'] },
+  { label: 'Gestao', items: ['/contratos', '/timesheet', '/financeiro', '/contas-receber', '/equipe', '/seguranca', '/configuracoes'] },
   { label: 'IA e Automacao', items: ['/ia', '/monitoramento'] },
->>>>>>> f60585aaf4340e69156a99262218e51d8dbbf59c
 ]
 
 export function Sidebar() {

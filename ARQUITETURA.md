@@ -1,11 +1,11 @@
-# JurisFlow — Guia Completo da Arquitetura para Desenvolvedores
+# Jurivox — Guia Completo da Arquitetura para Desenvolvedores
 
 > Este documento explica **como o sistema funciona por dentro**, em linguagem acessível.
 > Ideal para onboarding de novos desenvolvedores ou apresentações técnicas.
 
 ---
 
-## 1. O que é o JurisFlow?
+## 1. O que é o Jurivox?
 
 É um **SaaS jurídico multi-tenant** — isso significa que é um sistema onde vários escritórios de advocacia diferentes usam a mesma plataforma, mas cada um vê **apenas os seus próprios dados**. Funciona como um condomínio: todos moram no mesmo prédio (servidor), mas cada apartamento (escritório) é privado.
 
@@ -86,7 +86,7 @@ projeto-saas/
 
 ## 4. Como Funciona o Fluxo de uma Requisição
 
-Quando um usuário digita `jurisflow.com/clientes` no navegador, isso é o que acontece:
+Quando um usuário digita `jurivox.com/clientes` no navegador, isso é o que acontece:
 
 ```
 Navegador
@@ -497,7 +497,7 @@ ZAPI_CLIENT_TOKEN=...
 ## 15. Fluxo Completo do Usuário
 
 ```
-1. Acessa jurisflow.com
+1. Acessa jurivox.com
         ↓
 2. Middleware verifica: não logado → redireciona para /sign-in
         ↓
@@ -542,8 +542,8 @@ ZAPI_CLIENT_TOKEN=...
 
 ```bash
 # 1. Clonar o repositório
-git clone https://github.com/seu-usuario/jurisflow.git
-cd jurisflow
+git clone https://github.com/seu-usuario/jurivox.git
+cd jurivox
 
 # 2. Instalar dependências
 pnpm install
@@ -564,4 +564,4 @@ pnpm dev
 
 ---
 
-*Documento gerado em março de 2026. Versão do projeto: JurisFlow v0.1*
+*Documento gerado em março de 2026. Versão do projeto: Jurivox v0.1*

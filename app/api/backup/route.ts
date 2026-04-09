@@ -95,7 +95,7 @@ export async function GET(req: NextRequest) {
   }
 
   const dataStr = new Date().toISOString().split('T')[0]
-  const filename = `jurisflow-backup-${dataStr}.json`
+  const filename = `jurivox-backup-${dataStr}.json`
 
   return new NextResponse(JSON.stringify(backup, null, 2), {
     status: 200,

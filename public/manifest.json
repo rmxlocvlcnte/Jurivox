@@ -1,6 +1,6 @@
 {
-  "name": "JurisFlow - Gestão Jurídica",
-  "short_name": "JurisFlow",
+  "name": "Jurivox - Gestão Jurídica",
+  "short_name": "Jurivox",
   "description": "Sistema de gestão para escritórios de advocacia",
   "start_url": "/dashboard",
   "display": "standalone",

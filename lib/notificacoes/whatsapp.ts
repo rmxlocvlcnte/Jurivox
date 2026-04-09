@@ -112,14 +112,14 @@ export async function whatsappNovoPrazo({
   const urgencia = diasRestantes <= 1 ? '🚨 *URGENTE*' : diasRestantes <= 3 ? '⚠️ *Atenção*' : '📅'
 
   const mensagem =
-    `${urgencia} *JurisFlow* — Alerta de Prazo\n\n` +
+    `${urgencia} *Jurivox* — Alerta de Prazo\n\n` +
     `Olá, *${nomeAdvogado}*!\n\n` +
     `Um novo prazo foi cadastrado:\n` +
     `• Processo: *${numeroCnj}*\n` +
     `• Prazo: ${descricao}\n` +
     `• Vencimento: *${dataFormatada}*\n` +
     `• Dias restantes: *${diasRestantes}*\n\n` +
-    `Acesse o JurisFlow para mais detalhes.`
+    `Acesse o Jurivox para mais detalhes.`
 
   await enviarMensagem(telefoneAdvogado, mensagem)
 }
@@ -154,7 +154,7 @@ export async function whatsappLembretePrazo({
   const dataFormatada = new Date(dataVencimento + 'T12:00:00').toLocaleDateString('pt-BR')
 
   const mensagem =
-    `🚨 *JurisFlow* — Prazo Vencendo HOJE\n\n` +
+    `🚨 *Jurivox* — Prazo Vencendo HOJE\n\n` +
     `• Processo: *${numeroCnj}*\n` +
     `• Prazo: ${descricao}\n` +
     `• Data: *${dataFormatada}*\n\n` +

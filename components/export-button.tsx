@@ -113,7 +113,7 @@ export function ExportButton({ data, columns, filename, label }: Props) {
         doc.setFontSize(7)
         doc.setTextColor(148, 163, 184)
         doc.text(
-          `JurisFlow · Página ${i} de ${pageCount}`,
+          `Jurivox · Página ${i} de ${pageCount}`,
           doc.internal.pageSize.getWidth() / 2,
           doc.internal.pageSize.getHeight() - 5,
           { align: 'center' }

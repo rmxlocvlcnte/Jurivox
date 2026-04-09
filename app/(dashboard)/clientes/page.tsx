@@ -47,7 +47,7 @@ export default async function ClientesPage() {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {lista.length > 0 && (
-            <ExportButton data={lista} columns={EXPORT_COLS} filename="Clientes - JurisFlow" />
+            <ExportButton data={lista} columns={EXPORT_COLS} filename="Clientes - Jurivox" />
           )}
           <ImportCSVButton entidade="clientes" colunas={IMPORT_COLS} />
           <Link

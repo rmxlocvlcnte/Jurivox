@@ -65,7 +65,7 @@ export async function criarSolicitacaoAssinatura(formData: FormData) {
       const { Resend } = await import('resend')
       const resend = new Resend(process.env.RESEND_API_KEY)
       await resend.emails.send({
-        from: process.env.RESEND_FROM ?? 'JurisFlow <no-reply@jurisflow.com.br>',
+        from: process.env.RESEND_FROM ?? 'Jurivox <no-reply@jurivox.com.br>',
         to: parse.data.email_destinatario,
         subject: `Documento aguardando assinatura: ${parse.data.titulo}`,
         html: `
