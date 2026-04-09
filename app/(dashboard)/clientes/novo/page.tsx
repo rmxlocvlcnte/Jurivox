@@ -1,13 +1,9 @@
-// -----------------------------------------------
-// NOVO CLIENTE — Formulário de cadastro
-// -----------------------------------------------
-
 import { criarCliente } from '@/lib/actions/clientes'
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 
-const inputCls = 'w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent'
-const labelCls = 'block text-sm font-medium text-slate-700 mb-1'
+const inputCls = 'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-transparent focus:ring-2 focus:ring-amber-400'
+const labelCls = 'mb-1 block text-sm font-medium text-slate-700'
 
 export default async function NovoClientePage() {
   async function handleCriarCliente(formData: FormData) {
@@ -16,31 +12,28 @@ export default async function NovoClientePage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      {/* Breadcrumb */}
+    <div className="mx-auto max-w-2xl space-y-6">
       <div className="flex items-center gap-2">
-        <Link href="/clientes" className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900 transition-colors">
-          <ChevronLeft className="w-4 h-4" /> Clientes
+        <Link href="/clientes" className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900">
+          <ChevronLeft className="h-4 w-4" />
+          Clientes
         </Link>
         <span className="text-slate-300">/</span>
         <span className="text-sm font-medium text-slate-900">Novo Cliente</span>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-        <h1 className="text-xl font-bold text-slate-900 mb-6">Cadastrar Novo Cliente</h1>
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h1 className="mb-6 text-xl font-bold text-slate-900">Cadastrar novo cliente</h1>
 
         <form action={handleCriarCliente} className="space-y-5">
-
-          {/* Nome */}
           <div>
-            <label className={labelCls}>Nome Completo <span className="text-red-500">*</span></label>
+            <label className={labelCls}>Nome completo *</label>
             <input name="nome" type="text" required placeholder="Maria Aparecida Santos" className={inputCls} />
           </div>
 
-          {/* Seção: Documentos */}
           <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Documentos</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Documentos</p>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
                 <label className={labelCls}>CPF</label>
                 <input name="cpf" type="text" placeholder="000.000.000-00" className={inputCls} />
@@ -52,11 +45,10 @@ export default async function NovoClientePage() {
             </div>
           </div>
 
-          {/* Seção: Contato */}
           <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Contato</p>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Contato</p>
             <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                   <label className={labelCls}>Telefone</label>
                   <input name="telefone" type="tel" placeholder="(11) 3333-4444" className={inputCls} />
@@ -73,24 +65,33 @@ export default async function NovoClientePage() {
             </div>
           </div>
 
-          {/* Endereço */}
           <div>
-            <label className={labelCls}>Endereço Completo</label>
+            <label className={labelCls}>Endereco completo</label>
             <input
               name="endereco"
               type="text"
-              placeholder="Rua das Flores, 123 — Jardim Primavera, São Paulo/SP — CEP 01310-100"
+              placeholder="Rua das Flores, 123 - Jardim Primavera, Sao Paulo/SP"
               className={inputCls}
             />
           </div>
 
-          {/* Observações */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="md:col-span-2">
+              <label className={labelCls}>Cidade</label>
+              <input name="cidade" type="text" placeholder="Sao Paulo" className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Estado</label>
+              <input name="estado" type="text" maxLength={2} placeholder="SP" className={inputCls} />
+            </div>
+          </div>
+
           <div>
-            <label className={labelCls}>Observações</label>
+            <label className={labelCls}>Observacoes</label>
             <textarea
               name="observacoes"
               rows={3}
-              placeholder="Anotações sobre o cliente, histórico de contato, preferências..."
+              placeholder="Anotacoes sobre o cliente, historico de contato e preferencias."
               className={`${inputCls} resize-none`}
             />
           </div>
@@ -98,11 +99,14 @@ export default async function NovoClientePage() {
           <div className="flex gap-3 pt-2">
             <button
               type="submit"
-              className="bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-6 py-2.5 rounded-lg transition-colors text-sm"
+              className="rounded-lg bg-amber-500 px-6 py-2.5 text-sm font-semibold text-slate-900 transition-colors hover:bg-amber-600"
             >
-              Cadastrar Cliente
+              Cadastrar cliente
             </button>
-            <Link href="/clientes" className="px-6 py-2.5 text-sm text-slate-600 hover:text-slate-900 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+            <Link
+              href="/clientes"
+              className="rounded-lg border border-slate-200 px-6 py-2.5 text-sm text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
+            >
               Cancelar
             </Link>
           </div>

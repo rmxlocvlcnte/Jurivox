@@ -2,6 +2,7 @@ import { streamText } from "ai";
 import { legalModel } from "@/lib/ai";
 import { auth } from "@clerk/nextjs/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const maxDuration = 60;
 
@@ -74,6 +75,15 @@ export async function POST(req: Request) {
   const { userId } = await auth();
   if (!userId) {
     return new Response("Não autorizado", { status: 401 });
+  }
+
+  // Rate limit em memória: 20 req/min por usuário (camada rápida, sem I/O)
+  const rl = rateLimit(`chat:${userId}`, { windowMs: 60_000, maxRequests: 20 });
+  if (!rl.allowed) {
+    return new Response(
+      JSON.stringify({ error: "Muitas requisições. Aguarde um momento." }),
+      { status: 429, headers: { "Content-Type": "application/json", "X-RateLimit-Reset": String(rl.resetAt) } }
+    );
   }
 
   if (!(await checkRateLimit(userId))) {

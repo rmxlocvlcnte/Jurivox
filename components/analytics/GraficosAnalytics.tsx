@@ -7,6 +7,12 @@ import {
 
 const CORES = ['#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#ef4444', '#06b6d4']
 
+function paraNumero(value: unknown): number {
+  if (Array.isArray(value)) return Number(value[0] ?? 0)
+  const n = Number(value)
+  return Number.isFinite(n) ? n : 0
+}
+
 // ── Gráfico de Faturamento Mensal ──────────────────────────────
 export function GraficoFaturamento({ dados }: {
   dados: { mes: string; honorarios: number; recebido: number }[]
@@ -19,7 +25,10 @@ export function GraficoFaturamento({ dados }: {
         <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }}
           tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
         <Tooltip
-          formatter={(v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+          formatter={(v) => {
+            const valor = paraNumero(v)
+            return `R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+          }}
           contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12 }} />
         <Legend wrapperStyle={{ fontSize: 12 }} />
         <Bar dataKey="honorarios" name="Honorários" fill="#f59e0b" radius={[4, 4, 0, 0]} />
@@ -62,8 +71,8 @@ export function GraficoAreasPizza({ dados }: {
           cx="50%"
           cy="50%"
           outerRadius={90}
-          label={({ area, percent }) =>
-            percent > 0.05 ? `${area} (${(percent * 100).toFixed(0)}%)` : ''
+          label={({ name, percent }) =>
+            percent && percent > 0.05 ? `${name} (${(percent * 100).toFixed(0)}%)` : ''
           }
           labelLine={false}
         >
@@ -72,7 +81,7 @@ export function GraficoAreasPizza({ dados }: {
           ))}
         </Pie>
         <Tooltip
-          formatter={(v: number) => `${v} processos`}
+          formatter={(v) => `${paraNumero(v)} processos`}
           contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12 }} />
       </PieChart>
     </ResponsiveContainer>
@@ -90,7 +99,7 @@ export function GraficoHorasMensais({ dados }: {
         <XAxis dataKey="mes" tick={{ fontSize: 11, fill: '#94a3b8' }} />
         <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} />
         <Tooltip
-          formatter={(v: number) => `${v}h`}
+          formatter={(v) => `${paraNumero(v)}h`}
           contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12 }} />
         <Line type="monotone" dataKey="horas" name="Horas trabalhadas"
           stroke="#8b5cf6" strokeWidth={2} dot={{ r: 3 }} />

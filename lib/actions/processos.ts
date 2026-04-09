@@ -1,10 +1,5 @@
 'use server'
 
-// -----------------------------------------------
-// PROCESSOS — Criar, editar, excluir processos jurídicos
-// e adicionar movimentações na timeline
-// -----------------------------------------------
-
 import { getAuthContext } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
@@ -16,12 +11,12 @@ import { verificarLimite } from '@/lib/limites'
 
 const ProcessoSchema = z.object({
   cliente_id: z.string().uuid().optional().nullable(),
-  numero_cnj: z.string().min(8, 'Número CNJ é obrigatório.'),
-  tribunal: z.string().min(2, 'Tribunal é obrigatório.'),
+  numero_cnj: z.string().min(8, 'Numero CNJ e obrigatorio.'),
+  tribunal: z.string().min(2, 'Tribunal e obrigatorio.'),
   vara: z.string().max(100).optional().nullable(),
   classe: z.string().max(200).optional().nullable(),
   area_juridica: z.enum(['civil', 'criminal', 'trabalhista', 'previdenciario', 'tributario', 'outro'] as const, {
-    error: 'Área jurídica inválida.',
+    error: 'Area juridica invalida.',
   }),
   delegacia: z.string().max(200).optional().nullable(),
   numero_inquerito: z.string().max(50).optional().nullable(),
@@ -29,26 +24,21 @@ const ProcessoSchema = z.object({
   numero_beneficio: z.string().max(50).optional().nullable(),
   status: z.enum(['ativo', 'arquivado', 'encerrado'] as const).optional(),
   descricao: z.string().max(2000).optional().nullable(),
+  assunto: z.string().max(500).optional().nullable(),
+  observacoes: z.string().max(5000).optional().nullable(),
 })
 
 const MovimentacaoSchema = z.object({
-  descricao: z.string().min(2, 'A descrição é obrigatória.').max(2000),
+  descricao: z.string().min(2, 'A descricao e obrigatoria.').max(2000),
   tipo: z.enum(['andamento', 'audiencia', 'sentenca', 'despacho', 'prazo', 'outro'] as const).default('andamento'),
   data_movimentacao: z.string().regex(/^\d{4}-\d{2}-\d{2}/).optional(),
 })
 
-// ---- CRIAR PROCESSO ----
-export async function criarProcesso(formData: FormData) {
-  const { escritorioId, membroId, cargo, supabase } = await getAuthContext()
-  if (!escritorioId || !supabase) redirect('/sign-in')
+function parseProcessoForm(formData: FormData) {
+  const descricao = (formData.get('descricao') as string)?.trim() || null
+  const observacoes = (formData.get('observacoes') as string)?.trim() || null
 
-  const perm = exigirCargo(cargo, CARGOS_OPERACIONAIS, 'Sem permissão para criar processos.')
-  if (perm) return perm
-
-  const limite = await verificarLimite(escritorioId, 'processos', supabase)
-  if (limite.atingido) return { erro: limite.mensagem! }
-
-  const parse = ProcessoSchema.safeParse({
+  return {
     cliente_id: (formData.get('cliente_id') as string) || null,
     numero_cnj: (formData.get('numero_cnj') as string)?.trim(),
     tribunal: (formData.get('tribunal') as string)?.trim(),
@@ -60,59 +50,63 @@ export async function criarProcesso(formData: FormData) {
     reclamado: (formData.get('reclamado') as string)?.trim() || null,
     numero_beneficio: (formData.get('numero_beneficio') as string)?.trim() || null,
     status: (formData.get('status') as string) || 'ativo',
-    descricao: (formData.get('descricao') as string)?.trim() || null,
-  })
-
-  if (!parse.success) {
-    return { erro: parse.error.issues[0]?.message ?? 'Dados inválidos.' }
+    descricao,
+    assunto: (formData.get('assunto') as string)?.trim() || null,
+    observacoes: observacoes ?? descricao,
   }
+}
 
-  const dados = {
-    escritorio_id: escritorioId,
-    responsavel_id: membroId,
-    ...parse.data,
+// ── CRIAR PROCESSO ─────────────────────────────────────────────────────────
+
+export async function criarProcesso(formData: FormData) {
+  const { escritorioId, membroId, cargo, supabase } = await getAuthContext()
+  if (!escritorioId || !supabase) redirect('/sign-in')
+
+  const perm = exigirCargo(cargo, CARGOS_OPERACIONAIS, 'Sem permissao para criar processos.')
+  if (perm) return perm
+
+  const limite = await verificarLimite(escritorioId, 'processos', supabase)
+  if (limite.atingido) return { erro: limite.mensagem! }
+
+  const parse = ProcessoSchema.safeParse(parseProcessoForm(formData))
+  if (!parse.success) {
+    return { erro: parse.error.issues[0]?.message ?? 'Dados invalidos.' }
   }
 
   const { data: processo, error } = await supabase
     .from('processos')
-    .insert(dados)
+    .insert({
+      escritorio_id: escritorioId,
+      responsavel_id: membroId,
+      ...parse.data,
+    })
     .select('id')
     .single()
 
   if (error || !processo) {
     console.error('Erro ao criar processo:', error)
-    return { erro: 'Não foi possível criar o processo.' }
+    if (error?.message?.includes('LIMITE_PLANO')) {
+      return { erro: error.message.replace('LIMITE_PLANO: ', '') }
+    }
+    return { erro: 'Nao foi possivel criar o processo.' }
   }
 
   revalidatePath('/processos')
   redirect(`/processos/${processo.id}`)
 }
 
-// ---- ATUALIZAR PROCESSO ----
+// ── ATUALIZAR PROCESSO ─────────────────────────────────────────────────────
+
 export async function atualizarProcesso(id: string, formData: FormData) {
   const { escritorioId, cargo, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/sign-in')
 
-  const perm = exigirCargo(cargo, CARGOS_OPERACIONAIS, 'Sem permissão para atualizar processos.')
+  const perm = exigirCargo(cargo, CARGOS_OPERACIONAIS, 'Sem permissao para atualizar processos.')
   if (perm) return perm
 
-  const parse = ProcessoSchema.safeParse({
-    cliente_id: (formData.get('cliente_id') as string) || null,
-    numero_cnj: (formData.get('numero_cnj') as string)?.trim(),
-    tribunal: (formData.get('tribunal') as string)?.trim(),
-    vara: (formData.get('vara') as string)?.trim() || null,
-    classe: (formData.get('classe') as string)?.trim() || null,
-    area_juridica: formData.get('area_juridica') as string,
-    delegacia: (formData.get('delegacia') as string)?.trim() || null,
-    numero_inquerito: (formData.get('numero_inquerito') as string)?.trim() || null,
-    reclamado: (formData.get('reclamado') as string)?.trim() || null,
-    numero_beneficio: (formData.get('numero_beneficio') as string)?.trim() || null,
-    status: formData.get('status') as string,
-    descricao: (formData.get('descricao') as string)?.trim() || null,
-  })
-
+  const parse = ProcessoSchema.safeParse(parseProcessoForm(formData))
   if (!parse.success) {
-    return { erro: parse.error.issues[0]?.message ?? 'Dados inválidos.' }
+    return { erro: parse.error.issues[0]?.message ?? 'Dados invalidos.' }
   }
 
   const { error } = await supabase
@@ -123,7 +117,7 @@ export async function atualizarProcesso(id: string, formData: FormData) {
 
   if (error) {
     console.error('Erro ao atualizar processo:', error)
-    return { erro: 'Não foi possível atualizar o processo.' }
+    return { erro: 'Nao foi possivel atualizar o processo.' }
   }
 
   revalidatePath(`/processos/${id}`)
@@ -131,12 +125,13 @@ export async function atualizarProcesso(id: string, formData: FormData) {
   redirect(`/processos/${id}`)
 }
 
-// ---- EXCLUIR PROCESSO ----
+// ── EXCLUIR PROCESSO ───────────────────────────────────────────────────────
+
 export async function excluirProcesso(id: string) {
   const { escritorioId, cargo, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/sign-in')
 
-  const perm = exigirCargo(cargo, CARGOS_OPERACIONAIS, 'Sem permissão para excluir processos.')
+  const perm = exigirCargo(cargo, CARGOS_OPERACIONAIS, 'Sem permissao para excluir processos.')
   if (perm) return perm
 
   const { error } = await supabase
@@ -147,19 +142,20 @@ export async function excluirProcesso(id: string) {
 
   if (error) {
     console.error('Erro ao excluir processo:', error)
-    return { erro: 'Não foi possível excluir o processo.' }
+    return { erro: 'Nao foi possivel excluir o processo.' }
   }
 
   revalidatePath('/processos')
   redirect('/processos')
 }
 
-// ---- ADICIONAR MOVIMENTAÇÃO ----
+// ── ADICIONAR MOVIMENTAÇÃO ─────────────────────────────────────────────────
+
 export async function adicionarMovimentacao(processoId: string, formData: FormData) {
   const { escritorioId, cargo, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/sign-in')
 
-  const perm = exigirCargo(cargo, CARGOS_OPERACIONAIS, 'Sem permissão para adicionar movimentações.')
+  const perm = exigirCargo(cargo, CARGOS_OPERACIONAIS, 'Sem permissao para adicionar movimentacoes.')
   if (perm) return perm
 
   const { data: processo } = await supabase
@@ -169,7 +165,7 @@ export async function adicionarMovimentacao(processoId: string, formData: FormDa
     .eq('escritorio_id', escritorioId)
     .single()
 
-  if (!processo) return { erro: 'Processo não encontrado.' }
+  if (!processo) return { erro: 'Processo nao encontrado.' }
 
   const parse = MovimentacaoSchema.safeParse({
     descricao: (formData.get('descricao') as string)?.trim(),
@@ -178,7 +174,7 @@ export async function adicionarMovimentacao(processoId: string, formData: FormDa
   })
 
   if (!parse.success) {
-    return { erro: parse.error.issues[0]?.message ?? 'Dados inválidos.' }
+    return { erro: parse.error.issues[0]?.message ?? 'Dados invalidos.' }
   }
 
   const { error } = await supabase
@@ -194,29 +190,27 @@ export async function adicionarMovimentacao(processoId: string, formData: FormDa
     })
 
   if (error) {
-    console.error('Erro ao adicionar movimentação:', error)
-    return { erro: 'Não foi possível adicionar a movimentação.' }
+    console.error('Erro ao adicionar movimentacao:', error)
+    return { erro: 'Nao foi possivel adicionar a movimentacao.' }
   }
 
   const { data: processoCompleto } = await supabase
     .from('processos')
-    .select(`
-      numero_cnj,
-      escritorios (nome),
-      clientes (nome, email, telefone)
-    `)
+    .select('numero_cnj, escritorios(nome), clientes(nome, email, telefone)')
     .eq('id', processoId)
     .single()
 
   if (processoCompleto) {
     const escritorio = processoCompleto.escritorios as unknown as { nome: string } | null
-    const cliente = processoCompleto.clientes as unknown as { nome: string; email: string | null; telefone: string | null } | null
+    const cliente = processoCompleto.clientes as unknown as {
+      nome: string; email: string | null; telefone: string | null
+    } | null
 
     if (cliente?.email) {
       emailNovaMovimentacao({
         emailCliente: cliente.email,
         nomeCliente: cliente.nome,
-        nomeEscritorio: escritorio?.nome ?? 'Escritório',
+        nomeEscritorio: escritorio?.nome ?? 'Escritorio',
         numeroCnj: processoCompleto.numero_cnj,
         descricao: parse.data.descricao,
         tipo: parse.data.tipo,
@@ -229,7 +223,7 @@ export async function adicionarMovimentacao(processoId: string, formData: FormDa
         nomeCliente: cliente.nome,
         numeroCnj: processoCompleto.numero_cnj,
         descricao: parse.data.descricao,
-        nomeEscritorio: escritorio?.nome ?? 'Escritório',
+        nomeEscritorio: escritorio?.nome ?? 'Escritorio',
       }).catch(() => {})
     }
   }

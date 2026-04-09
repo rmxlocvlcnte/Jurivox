@@ -24,13 +24,19 @@ pnpm-debug.log*
 # Debug
 .vercel
 .turbo
+playwright-report/
+test-results/
 
 # Arquivos de Sistema
 .DS_Store
 *.pem
+Jurisflow/
 
 # TypeScript
 next-env.d.ts
 
 # Banco de dados — Schemas SQL são versionados (sem dados sensíveis)
 # database/
+
+# clerk configuration (can include secrets)
+/.clerk/

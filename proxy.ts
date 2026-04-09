@@ -1,13 +1,24 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 
-// Rotas públicas — não exigem login
+// Rotas publicas (sem autenticacao obrigatoria).
 const isPublicRoute = createRouteMatcher([
+  '/',
   '/sign-in(.*)',
   '/sign-up(.*)',
-  '/api/webhook(.*)',
-  // Cron de notificações autenticado por CRON_SECRET, não por Clerk
+  '/privacidade(.*)',
+  '/termos-de-uso(.*)',
+  '/dpa(.*)',
+  '/convite(.*)',
+  '/assinar(.*)',
+  '/cliente(.*)',           // portal do cliente (token próprio)
+  '/api/health',            // health check
+  '/api/stripe/webhook(.*)',
+  '/api/assinaturas/public(.*)',
+  '/api/convites/public(.*)',
   '/api/notificacoes(.*)',
+  '/api/observabilidade(.*)',
+  '/api/cron/monitoramento(.*)',
 ])
 
 export default clerkMiddleware(async (auth, request) => {
@@ -15,7 +26,7 @@ export default clerkMiddleware(async (auth, request) => {
     await auth.protect()
   }
 
-  // Injeta pathname nos headers para o layout conseguir ler
+  // Disponibiliza o pathname para layouts server-side.
   const headers = new Headers(request.headers)
   headers.set('x-pathname', request.nextUrl.pathname)
 
