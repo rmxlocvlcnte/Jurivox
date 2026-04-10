@@ -19,9 +19,9 @@ export function ImportCSVButton({ entidade, colunas }: Props) {
   const [headers, setHeaders] = useState<string[]>([])
   const [isPending, startTransition] = useTransition()
   const [resultado, setResultado] = useState<{ importados: number; erros: string[] } | null>(null)
+  const [tipoArquivo, setTipoArquivo] = useState<'csv' | 'xlsx'>('csv')
 
   function parseCSV(text: string): { headers: string[]; rows: ParsedRow[] } {
-    // Remove BOM
     const clean = text.replace(/^\uFEFF/, '')
     const lines = clean.split(/\r?\n/).filter(l => l.trim())
     if (lines.length < 2) return { headers: [], rows: [] }
@@ -56,23 +56,59 @@ export function ImportCSVButton({ entidade, colunas }: Props) {
     return { headers: hdrs, rows: parsed }
   }
 
+  async function parseXLSX(buffer: ArrayBuffer): Promise<{ headers: string[]; rows: ParsedRow[] }> {
+    const XLSX = await import('xlsx')
+    const wb = XLSX.read(buffer, { type: 'array' })
+    const ws = wb.Sheets[wb.SheetNames[0]]
+    const raw: string[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })
+    if (!raw.length || raw.length < 2) return { headers: [], rows: [] }
+
+    const hdrs = (raw[0] as string[]).map(h => String(h).toLowerCase().replace(/\s+/g, '_').trim())
+    const parsed = raw.slice(1)
+      .map(row => Object.fromEntries(hdrs.map((h, i) => [h, String(row[i] ?? '').trim()])))
+      .filter(r => Object.values(r).some(v => v))
+
+    return { headers: hdrs, rows: parsed }
+  }
+
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = (ev) => {
-      const text = ev.target?.result as string
-      const { headers: hdrs, rows: parsed } = parseCSV(text)
-      if (!parsed.length) {
-        toast.error('CSV vazio ou inválido.')
-        return
+
+    const isXlsx = file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls')
+    setTipoArquivo(isXlsx ? 'xlsx' : 'csv')
+
+    if (isXlsx) {
+      const reader = new FileReader()
+      reader.onload = async (ev) => {
+        const buffer = ev.target?.result as ArrayBuffer
+        const { headers: hdrs, rows: parsed } = await parseXLSX(buffer)
+        if (!parsed.length) {
+          toast.error('Planilha vazia ou inválida.')
+          return
+        }
+        setHeaders(hdrs)
+        setRows(parsed)
+        setResultado(null)
+        setModalAberto(true)
       }
-      setHeaders(hdrs)
-      setRows(parsed)
-      setResultado(null)
-      setModalAberto(true)
+      reader.readAsArrayBuffer(file)
+    } else {
+      const reader = new FileReader()
+      reader.onload = (ev) => {
+        const text = ev.target?.result as string
+        const { headers: hdrs, rows: parsed } = parseCSV(text)
+        if (!parsed.length) {
+          toast.error('CSV vazio ou inválido.')
+          return
+        }
+        setHeaders(hdrs)
+        setRows(parsed)
+        setResultado(null)
+        setModalAberto(true)
+      }
+      reader.readAsText(file, 'UTF-8')
     }
-    reader.readAsText(file, 'UTF-8')
     e.target.value = ''
   }
 
@@ -95,24 +131,19 @@ export function ImportCSVButton({ entidade, colunas }: Props) {
     })
   }
 
-  function baixarTemplate() {
-    const header = colunas.join(',')
-    const exemplo = colunas.map(() => '').join(',')
-    const csv = '\uFEFF' + header + '\n' + exemplo
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `template_importacao_${entidade}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
+  async function baixarTemplate() {
+    const XLSX = await import('xlsx')
+    const ws = XLSX.utils.aoa_to_sheet([colunas, colunas.map(() => '')])
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Importação')
+    XLSX.writeFile(wb, `template_importacao_${entidade}.xlsx`)
   }
 
   const label = entidade === 'clientes' ? 'Importar Clientes' : 'Importar Processos'
 
   return (
     <>
-      <input ref={inputRef} type="file" accept=".csv" className="hidden" onChange={handleFile} />
+      <input ref={inputRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleFile} />
 
       <button
         onClick={() => inputRef.current?.click()}
@@ -120,7 +151,7 @@ export function ImportCSVButton({ entidade, colunas }: Props) {
         className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-colors"
       >
         <Upload className="w-3.5 h-3.5" />
-        <span className="hidden sm:inline">Importar CSV</span>
+        <span className="hidden sm:inline">Importar CSV/XLSX</span>
       </button>
 
       {/* Modal de preview */}
@@ -134,7 +165,7 @@ export function ImportCSVButton({ entidade, colunas }: Props) {
                 <p className="text-xs text-slate-500 mt-0.5">
                   {resultado
                     ? `Importação concluída: ${resultado.importados} registro(s)`
-                    : `${rows.length} linha(s) detectada(s) · confirme antes de importar`}
+                    : `${rows.length} linha(s) · ${tipoArquivo.toUpperCase()} · confirme antes de importar`}
                 </p>
               </div>
               <button onClick={() => setModalAberto(false)} className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
@@ -209,7 +240,7 @@ export function ImportCSVButton({ entidade, colunas }: Props) {
                     className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 transition-colors"
                   >
                     <Download className="w-3.5 h-3.5" />
-                    Baixar template CSV
+                    Baixar template XLSX
                   </button>
                   <div className="flex items-center gap-2">
                     <button

@@ -1,7 +1,28 @@
 import { calcularDataVencimento, extrairPrazoDaDescricao } from '@/lib/utils/prazos'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 const DATAJUD_BASE = process.env.DATAJUD_API_URL ?? 'https://api-publica.datajud.cnj.jus.br'
 const DATAJUD_KEY = process.env.DATAJUD_API_KEY ?? null
+
+// Retry com backoff exponencial: tenta até `tentativas` vezes
+async function comRetry<T>(
+  fn: () => Promise<T>,
+  tentativas = 3,
+  delayMs = 500,
+): Promise<T> {
+  let ultimoErro: unknown
+  for (let i = 0; i < tentativas; i++) {
+    try {
+      return await fn()
+    } catch (err) {
+      ultimoErro = err
+      if (i < tentativas - 1) {
+        await new Promise(r => setTimeout(r, delayMs * Math.pow(2, i)))
+      }
+    }
+  }
+  throw ultimoErro
+}
 
 const TRIBUNAL_MAP: Record<string, string> = {
   '8.01': 'tjac', '8.02': 'tjal', '8.03': 'tjap', '8.04': 'tjam',
@@ -41,7 +62,7 @@ function classificarTipoMovimentacao(descricao: string): 'andamento' | 'audienci
 }
 
 async function criarPrazoAutomatico(params: {
-  supabaseAdmin: any
+  supabaseAdmin: SupabaseClient
   escritorioId: string
   processoId: string
   responsavelId?: string | null
@@ -146,33 +167,42 @@ export async function consultarProcesso(numeroCnj: string): Promise<ProcessoData
   }
 
   try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        Authorization: `APIKey ${DATAJUD_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(15000),
-    })
+    return await comRetry(async () => {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: `APIKey ${DATAJUD_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(15000),
+      })
 
-    if (!res.ok) return null
-    const json = await res.json()
-    const hit = json?.hits?.hits?.[0]?._source
-    if (!hit) return null
+      if (res.status === 429) {
+        // Rate limit: aguarda 2s antes de retry
+        await new Promise(r => setTimeout(r, 2000))
+        throw new Error('rate_limit')
+      }
 
-    return {
-      numeroProcesso: hit.numeroProcesso ?? numeroCnj,
-      tribunal: indice.toUpperCase(),
-      dataAjuizamento: hit.dataAjuizamento,
-      assunto: hit.assuntos?.[0]?.nome,
-      classe: hit.classe?.nome,
-      movimentos: (hit.movimentos ?? []).map((m: any) => ({
-        dataHora: m.dataHora ?? m.data,
-        descricao: m.nome ?? m.descricao ?? 'Movimentacao',
-        codigo: m.codigo,
-      })),
-    }
+      if (!res.ok) throw new Error(`http_${res.status}`)
+
+      const json = await res.json()
+      const hit = json?.hits?.hits?.[0]?._source
+      if (!hit) return null
+
+      return {
+        numeroProcesso: hit.numeroProcesso ?? numeroCnj,
+        tribunal: indice.toUpperCase(),
+        dataAjuizamento: hit.dataAjuizamento,
+        assunto: hit.assuntos?.[0]?.nome,
+        classe: hit.classe?.nome,
+        movimentos: (hit.movimentos ?? []).map((m: any) => ({
+          dataHora: m.dataHora ?? m.data,
+          descricao: m.nome ?? m.descricao ?? 'Movimentacao',
+          codigo: m.codigo,
+        })),
+      } satisfies ProcessoDataJud
+    }, 3, 800)
   } catch {
     return null
   }
@@ -182,7 +212,7 @@ export async function sincronizarProcesso(
   processoId: string,
   numeroCnj: string,
   escritorioId: string,
-  supabaseAdmin: any,
+  supabaseAdmin: SupabaseClient,
 ): Promise<{ novas: number; prazosAutomaticos: number; erro?: string }> {
   const dados = await consultarProcesso(numeroCnj)
 
