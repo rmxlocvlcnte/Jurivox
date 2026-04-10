@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   alvo_id       text,
   ip            text,
   user_agent    text,
-  metadata      jsonb DEFAULT '{}'::jsonb,
+  metadata      jsonb DEFAULT '{}'::jsonb, 
   criado_em     timestamptz DEFAULT now()
 );
 

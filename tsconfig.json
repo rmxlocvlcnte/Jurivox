@@ -32,6 +32,10 @@
   ],
   "exclude": [
     "node_modules",
+    "tests",
+    "tests/**",
+    "playwright.config.ts",
+    "vitest.config.ts",
     "Jurisflow",
     "Jurisflow/**"
   ]

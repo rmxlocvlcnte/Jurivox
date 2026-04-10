@@ -57,7 +57,7 @@ export async function revogarOutrasSessoes() {
   let revogadas = 0
 
   while (true) {
-    const { data, total_count } = await client.sessions.getSessionList({
+    const { data, totalCount } = await client.sessions.getSessionList({
       userId,
       status: 'active',
       limit: 50,
@@ -73,7 +73,7 @@ export async function revogarOutrasSessoes() {
     }
 
     offset += data.length
-    if (offset >= total_count) break
+    if (offset >= totalCount) break
   }
 
   const { ip, userAgent } = await getRequestInfo()

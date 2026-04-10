@@ -41,6 +41,18 @@ export default async function BoletosPage() {
 
   const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
   const fmtData = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('pt-BR')
+  const criarBoletoAction = async (formData: FormData) => {
+    'use server'
+    await criarBoleto(formData)
+  }
+  const sincronizarStatusAction = async (boletoId: string) => {
+    'use server'
+    await sincronizarStatusBoleto(boletoId)
+  }
+  const cancelarBoletoAction = async (boletoId: string) => {
+    'use server'
+    await cancelarBoleto(boletoId)
+  }
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -95,7 +107,7 @@ export default async function BoletosPage() {
             <Plus className="h-4 w-4 text-amber-500" />
             Nova Cobrança
           </h2>
-          <form action={criarBoleto} className="grid gap-4 sm:grid-cols-2">
+          <form action={criarBoletoAction} className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <label className="block text-xs font-medium text-slate-600 mb-1">Cliente *</label>
               <select
@@ -234,7 +246,7 @@ export default async function BoletosPage() {
                       </a>
                     )}
 
-                    <form action={sincronizarStatusBoleto.bind(null, b.id)}>
+                    <form action={sincronizarStatusAction.bind(null, b.id)}>
                       <button
                         type="submit"
                         title="Sincronizar status"
@@ -245,7 +257,7 @@ export default async function BoletosPage() {
                     </form>
 
                     {['PENDING', 'OVERDUE'].includes(b.status) && podeEmitir && (
-                      <form action={cancelarBoleto.bind(null, b.id)}>
+                      <form action={cancelarBoletoAction.bind(null, b.id)}>
                         <button
                           type="submit"
                           title="Cancelar cobrança"

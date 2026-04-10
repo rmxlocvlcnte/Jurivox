@@ -62,7 +62,8 @@ export async function verificarLimite(
     .limit(1)
     .single()
 
-  const plano = assinatura?.planos as {
+  const planoRaw = assinatura?.planos as unknown
+  const plano = (Array.isArray(planoRaw) ? planoRaw[0] : planoRaw) as {
     nome: string
     limite_processos: number
     limite_clientes: number
