@@ -1,7 +1,7 @@
 import { getAuthContext } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Shield, FileText, Download, Settings2, Building2 } from 'lucide-react'
+import { Shield, FileText, Download, Settings2, Building2, Plug } from 'lucide-react'
 import { buscarEscritorio } from '@/lib/actions/escritorio'
 import { EscritorioForm } from '@/components/configuracoes/EscritorioForm'
 
@@ -69,6 +69,28 @@ export default async function ConfiguracoesPage() {
           </Link>
         </div>
       </section>
+
+      {/* Integrações */}
+      {podeEditar && (
+        <section className="rounded-xl border border-amber-200 bg-amber-50/50 p-5 shadow-sm">
+          <div className="mb-3 flex items-center gap-2">
+            <Plug className="h-4 w-4 text-amber-600" />
+            <h2 className="text-sm font-semibold text-slate-900">Integrações & Serviços</h2>
+          </div>
+          <p className="text-sm text-slate-600">
+            Configure Stripe, WhatsApp, e-mail, DataJud e notificações push.
+          </p>
+          <div className="mt-3">
+            <Link
+              href="/configuracoes/integracoes"
+              className="inline-flex items-center gap-2 rounded-lg bg-amber-500 hover:bg-amber-600 px-4 py-2 text-sm font-semibold text-slate-900 transition-colors"
+            >
+              <Plug className="h-4 w-4" />
+              Ver status das integrações
+            </Link>
+          </div>
+        </section>
+      )}
 
       {/* Documentos Legais */}
       <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">

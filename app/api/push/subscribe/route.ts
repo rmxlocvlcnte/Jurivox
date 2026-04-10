@@ -2,7 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-// Salva ou remove a subscrição Web Push de um usuário
+// Armazena subscrições Web Push como JSON no Supabase Storage
+// (não requer nova tabela — usa bucket existente)
+const BUCKET = 'push-subs'
+
+async function garantirBucket(supabase: ReturnType<typeof createAdminClient>) {
+  const { data: buckets } = await supabase.storage.listBuckets()
+  const existe = buckets?.some(b => b.name === BUCKET)
+  if (!existe) {
+    await supabase.storage.createBucket(BUCKET, { public: false, fileSizeLimit: 4096 })
+  }
+}
+
 export async function POST(req: NextRequest) {
   const { membroId, escritorioId } = await getAuthContext()
   if (!membroId || !escritorioId) {
@@ -10,33 +21,31 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { subscription } = body as { subscription: PushSubscription | null }
+  const { subscription } = body as { subscription: Record<string, unknown> | null }
 
   const supabase = createAdminClient()
+  await garantirBucket(supabase)
+
+  const path = `${escritorioId}/${membroId}.json`
 
   if (!subscription) {
-    // Remover subscrição
-    await supabase
-      .from('push_subscriptions')
-      .delete()
-      .eq('membro_id', membroId)
+    await supabase.storage.from(BUCKET).remove([path])
     return NextResponse.json({ sucesso: true })
   }
 
-  // Upsert da subscrição
-  const { error } = await supabase
-    .from('push_subscriptions')
-    .upsert(
-      {
-        membro_id: membroId,
-        escritorio_id: escritorioId,
-        endpoint: (subscription as any).endpoint,
-        p256dh: (subscription as any).keys?.p256dh ?? null,
-        auth: (subscription as any).keys?.auth ?? null,
-        atualizado_em: new Date().toISOString(),
-      },
-      { onConflict: 'membro_id' }
-    )
+  const payload = JSON.stringify({
+    membro_id: membroId,
+    escritorio_id: escritorioId,
+    subscription,
+    atualizado_em: new Date().toISOString(),
+  })
+
+  const { error } = await supabase.storage
+    .from(BUCKET)
+    .upload(path, new Blob([payload], { type: 'application/json' }), {
+      upsert: true,
+      contentType: 'application/json',
+    })
 
   if (error) {
     console.error('[Push] erro ao salvar subscrição:', error)
