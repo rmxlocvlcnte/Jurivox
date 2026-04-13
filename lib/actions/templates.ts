@@ -148,5 +148,25 @@ export async function gerarDocumentoDeTemplate(
   if (error || !doc) return { erro: 'Não foi possível gerar o documento.' }
 
   revalidatePath('/templates')
+  revalidatePath('/documentos')
   return { sucesso: true, documentoId: doc.id, conteudo, nome: template.nome }
+}
+
+export async function excluirDocumentoGerado(id: string) {
+  const { escritorioId, cargo, supabase } = await getAuthContext()
+  if (!escritorioId || !supabase) redirect('/sign-in')
+
+  const perm = exigirCargo(cargo, CARGOS_OPERACIONAIS, 'Sem permissão para excluir documentos.')
+  if (perm) return perm
+
+  const { error } = await supabase
+    .from('documentos_gerados')
+    .delete()
+    .eq('id', id)
+    .eq('escritorio_id', escritorioId)
+
+  if (error) return { erro: 'Não foi possível excluir o documento.' }
+
+  revalidatePath('/documentos')
+  return { sucesso: true }
 }

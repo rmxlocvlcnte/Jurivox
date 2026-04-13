@@ -14,7 +14,7 @@ import { adicionarDocumentoProcesso, excluirDocumentoProcesso } from '@/lib/acti
 import {
   ChevronLeft, Pencil, Calendar, Clock,
   CheckCircle, Circle, FileText, Scale,
-  AlertTriangle, MapPin, Gavel, Paperclip, Trash2, ExternalLink,
+  AlertTriangle, MapPin, Gavel, Paperclip, Trash2, ExternalLink, FilePlus2,
 } from 'lucide-react'
 
 const LABEL_AREA: Record<string, string> = {
@@ -70,8 +70,8 @@ export default async function ProcessoDetalhePage({
 
   if (!processo) notFound()
 
-  // Busca movimentações, prazos e documentos em paralelo
-  const [{ data: movimentacoes }, { data: prazos }, { data: documentos }] = await Promise.all([
+  // Busca movimentações, prazos, documentos e docs gerados em paralelo
+  const [{ data: movimentacoes }, { data: prazos }, { data: documentos }, { data: docsGerados }] = await Promise.all([
     supabase
       .from('movimentacoes')
       .select('*')
@@ -89,6 +89,13 @@ export default async function ProcessoDetalhePage({
       .select('*')
       .eq('processo_id', id)
       .order('criado_em', { ascending: false }),
+
+    supabase
+      .from('documentos_gerados')
+      .select('id, nome, criado_em, templates_documento(tipo)')
+      .eq('processo_id', id)
+      .order('criado_em', { ascending: false })
+      .limit(10),
   ])
 
   const cliente = processo.clientes as any
@@ -439,6 +446,35 @@ export default async function ProcessoDetalhePage({
               )}
             </div>
           </div>
+
+          {/* Documentos Gerados */}
+          {(docsGerados?.length ?? 0) > 0 && (
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+              <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                <h3 className="font-semibold text-slate-900 flex items-center gap-2 text-sm">
+                  <FilePlus2 className="w-4 h-4 text-emerald-500" /> Documentos Gerados
+                </h3>
+                <Link href="/documentos" className="text-xs text-emerald-600 hover:text-emerald-700">
+                  Ver todos →
+                </Link>
+              </div>
+              <div className="divide-y divide-slate-100">
+                {docsGerados!.map((d) => (
+                  <Link
+                    key={d.id}
+                    href={`/documentos/${d.id}`}
+                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors"
+                  >
+                    <FileText className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                    <span className="text-xs text-slate-700 flex-1 truncate">{d.nome}</span>
+                    <span className="text-xs text-slate-400 shrink-0">
+                      {new Date(d.criado_em).toLocaleDateString('pt-BR')}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Ação: Resumir com IA */}
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">

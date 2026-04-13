@@ -10,7 +10,7 @@ import { UploadDocumento } from '@/components/upload-documento'
 import { WhatsAppForm } from '@/components/clientes/WhatsAppForm'
 import {
   ChevronLeft, Pencil, Phone, Mail, MapPin,
-  User, FileText, FolderOpen, MessageCircle,
+  User, FileText, FolderOpen, MessageCircle, FilePlus2,
 } from 'lucide-react'
 
 function formatarData(data: string) {
@@ -26,7 +26,7 @@ export default async function ClienteDetalhePage({
   const { escritorioId, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/onboarding')
 
-  const [{ data: cliente }, { data: processos }, { data: documentos }] = await Promise.all([
+  const [{ data: cliente }, { data: processos }, { data: documentos }, { data: docsGerados }] = await Promise.all([
     supabase
       .from('clientes')
       .select('*')
@@ -46,6 +46,13 @@ export default async function ClienteDetalhePage({
       .select('id, tipo, nome_arquivo, url_arquivo, criado_em')
       .eq('cliente_id', id)
       .order('criado_em', { ascending: false }),
+
+    supabase
+      .from('documentos_gerados')
+      .select('id, nome, criado_em')
+      .eq('cliente_id', id)
+      .order('criado_em', { ascending: false })
+      .limit(8),
   ])
 
   if (!cliente) notFound()
@@ -237,6 +244,35 @@ export default async function ClienteDetalhePage({
               )}
             </div>
           </div>
+
+          {/* Documentos Gerados */}
+          {(docsGerados?.length ?? 0) > 0 && (
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+                <h3 className="font-semibold text-slate-900 flex items-center gap-2 text-sm">
+                  <FilePlus2 className="w-4 h-4 text-emerald-500" /> Documentos Gerados
+                </h3>
+                <Link href="/documentos" className="text-xs text-emerald-600 hover:text-emerald-700">
+                  Ver todos →
+                </Link>
+              </div>
+              <div className="divide-y divide-slate-100">
+                {docsGerados!.map((d) => (
+                  <Link
+                    key={d.id}
+                    href={`/documentos/${d.id}`}
+                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors"
+                  >
+                    <FileText className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                    <span className="text-xs text-slate-700 flex-1 truncate">{d.nome}</span>
+                    <span className="text-xs text-slate-400 shrink-0">
+                      {new Date(d.criado_em).toLocaleDateString('pt-BR')}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

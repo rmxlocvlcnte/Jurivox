@@ -4,6 +4,7 @@ import Link from 'next/link'
 import {
   Scale, CheckCircle2, Circle, ArrowRight,
   Users, FolderOpen, CreditCard, Shield, UserPlus, Sparkles,
+  FileText, Plug,
 } from 'lucide-react'
 
 // ── Checklist dinâmico baseado em dados reais do banco ─────────────────────
@@ -14,11 +15,13 @@ async function buildChecklist(escritorioId: string, supabase: any, cargo: string
     { count: totalProcessos },
     { data: assinatura },
     { count: totalMembros },
+    { count: totalTemplates },
   ] = await Promise.all([
     supabase.from('clientes').select('id', { count: 'exact', head: true }).eq('escritorio_id', escritorioId),
     supabase.from('processos').select('id', { count: 'exact', head: true }).eq('escritorio_id', escritorioId),
     supabase.from('assinaturas_escritorio').select('plano_id, status').eq('escritorio_id', escritorioId).in('status', ['active', 'trialing']).limit(1).maybeSingle(),
     supabase.from('membros_escritorio').select('id', { count: 'exact', head: true }).eq('escritorio_id', escritorioId).eq('ativo', true),
+    supabase.from('templates_documento').select('id', { count: 'exact', head: true }).eq('escritorio_id', escritorioId),
   ])
 
   return [
@@ -87,6 +90,29 @@ async function buildChecklist(escritorioId: string, supabase: any, cargo: string
       feito: false, // verificado via Clerk no client
       href: '/seguranca',
       label: 'Configurar 2FA',
+    },
+    {
+      id: 'template',
+      titulo: 'Criar primeiro template de documento',
+      desc: 'Modele contratos, petições e procurações com variáveis dinâmicas.',
+      icone: FileText,
+      cor: 'text-indigo-500',
+      bg: 'bg-indigo-50',
+      feito: (totalTemplates ?? 0) > 0,
+      href: '/templates/novo',
+      label: 'Criar template',
+    },
+    {
+      id: 'integracoes',
+      titulo: 'Configurar integrações',
+      desc: 'Ative WhatsApp, boletos PIX e outras integrações do escritório.',
+      icone: Plug,
+      cor: 'text-teal-500',
+      bg: 'bg-teal-50',
+      feito: false, // depende de vars de ambiente, não verificável no banco
+      href: '/configuracoes/integracoes',
+      label: 'Ver integrações',
+      ocultar: !['socio', 'admin'].includes(cargo ?? ''),
     },
   ].filter(item => !item.ocultar)
 }

@@ -1,7 +1,7 @@
 import { getAuthContext } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Shield, FileText, Download, Settings2, Building2, Plug } from 'lucide-react'
+import { Shield, FileText, Download, Settings2, Building2, Plug, Key } from 'lucide-react'
 import { buscarEscritorio } from '@/lib/actions/escritorio'
 import { EscritorioForm } from '@/components/configuracoes/EscritorioForm'
 
@@ -87,6 +87,28 @@ export default async function ConfiguracoesPage() {
             >
               <Plug className="h-4 w-4" />
               Ver status das integrações
+            </Link>
+          </div>
+        </section>
+      )}
+
+      {/* API Pública */}
+      {podeEditar && (
+        <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-3 flex items-center gap-2">
+            <Key className="h-4 w-4 text-slate-600" />
+            <h2 className="text-sm font-semibold text-slate-900">API Pública</h2>
+          </div>
+          <p className="text-sm text-slate-600">
+            Gerencie chaves de API para integrar sistemas externos com a plataforma.
+          </p>
+          <div className="mt-3">
+            <Link
+              href="/configuracoes/api"
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              <Key className="h-4 w-4" />
+              Gerenciar chaves de API
             </Link>
           </div>
         </section>

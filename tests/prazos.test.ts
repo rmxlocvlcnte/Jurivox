@@ -14,11 +14,11 @@ describe('prazos utils', () => {
   })
 
   it('pula feriado nacional no calculo de dias uteis', () => {
-    // 2026-04-19 e domingo. 2026-04-20 e segunda. 2026-04-21 e Tiradentes (feriado).
-    // +2 dias uteis a partir de 2026-04-19: pula domingo, pula Tiradentes -> 2026-04-22 e 2026-04-23
+    // 2026-04-19 e domingo. 2026-04-20 e segunda (dia útil 1). 2026-04-21 e Tiradentes (feriado, pula).
+    // 2026-04-22 e quarta (dia útil 2) -> resultado correto
     const feriados = new Set(['2026-04-21']) // Tiradentes
     const vencimento = calcularDataVencimentoComFeriados('2026-04-19', 2, true, feriados)
-    expect(vencimento).toBe('2026-04-23')
+    expect(vencimento).toBe('2026-04-22')
   })
 
   it('nao pula feriado em dias corridos', () => {
