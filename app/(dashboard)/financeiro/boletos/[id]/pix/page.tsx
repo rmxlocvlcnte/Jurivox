@@ -1,7 +1,7 @@
 import { getAuthContext } from '@/lib/auth'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { buscarQrCodePix } from '@/lib/asaas'
+import { buscarQrCodePix } from '@/lib/mercadopago'
 import {
   ArrowLeft, QrCode, Copy, AlertTriangle, CheckCircle2,
 } from 'lucide-react'
@@ -39,7 +39,7 @@ export default async function PixQrCodePage({
 
   if (!boleto) notFound()
 
-  const asaasConfigurado = !!(process.env.ASAAS_API_KEY && process.env.ASAAS_API_KEY !== 'seu_asaas_api_key')
+  const asaasConfigurado = !!(process.env.MP_ACCESS_TOKEN && process.env.MP_ACCESS_TOKEN !== 'SEU_MP_ACCESS_TOKEN')
   const cliente = boleto.clientes as unknown as { nome: string; cpf: string | null } | null
 
   // Busca QR Code no Asaas (somente se configurado e houver payment_id)

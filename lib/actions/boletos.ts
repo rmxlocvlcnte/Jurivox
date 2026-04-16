@@ -5,17 +5,17 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { exigirCargo, CARGOS_FINANCEIRO } from '@/lib/permissoes'
 import {
-  obterOuCriarCliente,
   criarCobranca,
   cancelarCobranca,
   buscarCobranca,
   buscarQrCodePix,
-} from '@/lib/asaas'
+  MP_STATUS_PAGO,
+} from '@/lib/mercadopago'
 import { z } from 'zod'
 
 const BoletoSchema = z.object({
-  cliente_id: z.string().uuid('Cliente obrigatorio.'),
-  conta_receber_id: z.string().uuid().optional().nullable(),
+  cliente_id: z.uuid({ error: 'Cliente obrigatorio.' }),
+  conta_receber_id: z.uuid().optional().nullable(),
   descricao: z.string().min(3, 'Descricao obrigatoria.').max(300),
   valor: z.coerce.number().min(1, 'Valor minimo R$ 1,00.'),
   data_vencimento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data invalida.'),
@@ -28,7 +28,7 @@ export async function criarBoleto(formData: FormData) {
   const { escritorioId, membroId, cargo, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/sign-in')
 
-  const perm = exigirCargo(cargo, CARGOS_FINANCEIRO, 'Sem permissao para emitir boletos.')
+  const perm = exigirCargo(cargo, CARGOS_FINANCEIRO, 'Sem permissao para emitir cobranças.')
   if (perm) return perm
 
   const parse = BoletoSchema.safeParse({
@@ -53,69 +53,64 @@ export async function criarBoleto(formData: FormData) {
     .single()
 
   if (!clienteDB) return { erro: 'Cliente nao encontrado.' }
-  if (!clienteDB.cpf) return { erro: 'O cliente precisa ter CPF/CNPJ cadastrado para emitir boleto.' }
+  if (!clienteDB.cpf) return { erro: 'O cliente precisa ter CPF/CNPJ cadastrado para emitir cobrança.' }
+  if (!clienteDB.email) return { erro: 'O cliente precisa ter e-mail cadastrado para emitir cobrança via Mercado Pago.' }
 
   try {
-    // 1. Cria ou busca cliente no Asaas
-    const asaasCliente = await obterOuCriarCliente({
-      nome: clienteDB.nome,
-      cpfCnpj: clienteDB.cpf,
-      email: clienteDB.email,
-      telefone: clienteDB.telefone,
-    })
-
-    // 2. Cria a cobrança no Asaas
     const cobranca = await criarCobranca({
-      asaasCustomerId: asaasCliente.id,
+      nomePagador: clienteDB.nome,
+      cpfCnpj: clienteDB.cpf,
+      emailPagador: clienteDB.email,
       valor: parse.data.valor,
       vencimento: parse.data.data_vencimento,
       descricao: parse.data.descricao,
       tipo: parse.data.tipo,
-      externalReference: `escritorio:${escritorioId}`,
+      referencia: `escritorio:${escritorioId}`,
     })
 
-    // 3. Salva no banco
+    // URL do boleto ou ticket Pix
+    const urlBoleto = cobranca.transaction_details?.external_resource_url ?? null
+    const urlPix = cobranca.point_of_interaction?.transaction_data?.ticket_url ?? null
+
     const { data: boleto, error } = await supabase
       .from('boletos')
       .insert({
         escritorio_id: escritorioId,
         cliente_id: parse.data.cliente_id,
         conta_receber_id: parse.data.conta_receber_id,
-        asaas_payment_id: cobranca.id,
-        asaas_customer_id: asaasCliente.id,
+        asaas_payment_id: String(cobranca.id),  // reutilizando coluna para MP payment ID
         descricao: parse.data.descricao,
         valor: parse.data.valor,
         data_vencimento: parse.data.data_vencimento,
         tipo: parse.data.tipo,
-        status: cobranca.status,
-        url_boleto: cobranca.bankSlipUrl,
-        url_invoice: cobranca.invoiceUrl,
-        nosso_numero: cobranca.nossoNumero,
+        status: cobranca.status === 'approved' ? 'RECEIVED' : 'PENDING',
+        url_boleto: urlBoleto,
+        url_invoice: urlPix ?? urlBoleto,
         criado_por: membroId,
       })
       .select('id')
       .single()
 
     if (error || !boleto) {
-      console.error('Erro ao salvar boleto:', error)
-      return { erro: 'Cobranca criada no Asaas mas falhou ao salvar. Verifique o painel Asaas.' }
+      console.error('Erro ao salvar cobrança:', error)
+      return { erro: 'Cobrança criada no Mercado Pago mas falhou ao salvar. Verifique o painel MP.' }
     }
 
     revalidatePath('/financeiro/boletos')
-    return { sucesso: true, boletoId: boleto.id, invoiceUrl: cobranca.invoiceUrl }
+    return { sucesso: true, boletoId: boleto.id, invoiceUrl: urlBoleto ?? urlPix }
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Erro ao comunicar com Asaas.'
+    const msg = err instanceof Error ? err.message : 'Erro ao comunicar com Mercado Pago.'
     return { erro: msg }
   }
 }
 
-// ── CANCELAR BOLETO ────────────────────────────────────────────────────────
+// ── CANCELAR COBRANÇA ──────────────────────────────────────────────────────
 
 export async function cancelarBoleto(boletoId: string) {
   const { escritorioId, cargo, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/sign-in')
 
-  const perm = exigirCargo(cargo, CARGOS_FINANCEIRO, 'Sem permissao para cancelar boletos.')
+  const perm = exigirCargo(cargo, CARGOS_FINANCEIRO, 'Sem permissao para cancelar cobranças.')
   if (perm) return perm
 
   const { data: boleto } = await supabase
@@ -125,9 +120,9 @@ export async function cancelarBoleto(boletoId: string) {
     .eq('escritorio_id', escritorioId)
     .single()
 
-  if (!boleto) return { erro: 'Boleto nao encontrado.' }
+  if (!boleto) return { erro: 'Cobrança nao encontrada.' }
   if (['RECEIVED', 'CONFIRMED'].includes(boleto.status)) {
-    return { erro: 'Nao e possivel cancelar um boleto ja pago.' }
+    return { erro: 'Nao e possivel cancelar uma cobrança ja paga.' }
   }
 
   try {
@@ -158,23 +153,36 @@ export async function sincronizarStatusBoleto(boletoId: string) {
     .eq('escritorio_id', escritorioId)
     .single()
 
-  if (!boleto) return { erro: 'Boleto nao encontrado.' }
+  if (!boleto) return { erro: 'Cobrança nao encontrada.' }
 
   try {
     const cobranca = await buscarCobranca(boleto.asaas_payment_id)
 
+    // Mapeia status MP → status interno
+    const pago = MP_STATUS_PAGO.includes(cobranca.status)
+    const statusInterno = pago
+      ? 'RECEIVED'
+      : cobranca.status === 'cancelled'
+      ? 'CANCELED'
+      : cobranca.status === 'refunded'
+      ? 'REFUNDED'
+      : 'PENDING'
+
+    const urlBoleto = cobranca.transaction_details?.external_resource_url ?? null
+    const urlPix = cobranca.point_of_interaction?.transaction_data?.ticket_url ?? null
+
     await supabase
       .from('boletos')
       .update({
-        status: cobranca.status,
-        url_boleto: cobranca.bankSlipUrl ?? null,
-        url_invoice: cobranca.invoiceUrl ?? null,
+        status: statusInterno,
+        url_boleto: urlBoleto,
+        url_invoice: urlPix ?? urlBoleto,
         atualizado_em: new Date().toISOString(),
       })
       .eq('id', boletoId)
 
     revalidatePath('/financeiro/boletos')
-    return { sucesso: true, status: cobranca.status }
+    return { sucesso: true, status: statusInterno }
   } catch (err) {
     return { erro: err instanceof Error ? err.message : 'Erro ao sincronizar.' }
   }
@@ -193,8 +201,8 @@ export async function buscarPixQrCode(boletoId: string) {
     .eq('escritorio_id', escritorioId)
     .single()
 
-  if (!boleto) return { erro: 'Boleto nao encontrado.' }
-  if (boleto.tipo !== 'PIX') return { erro: 'Esta cobranca nao e Pix.' }
+  if (!boleto) return { erro: 'Cobrança nao encontrada.' }
+  if (boleto.tipo !== 'PIX') return { erro: 'Esta cobrança nao e Pix.' }
 
   try {
     const qr = await buscarQrCodePix(boleto.asaas_payment_id)

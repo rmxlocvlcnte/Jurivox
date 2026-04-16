@@ -52,7 +52,7 @@ export default async function IntegracoesPage() {
   const resend = { ok: !!process.env.RESEND_API_KEY }
   const zapi = { ok: !!(process.env.ZAPI_INSTANCE_ID && process.env.ZAPI_TOKEN && process.env.ZAPI_INSTANCE_ID !== 'SEU_INSTANCE_ID') }
   const datajud = { ok: !!process.env.DATAJUD_API_KEY && process.env.DATAJUD_API_KEY !== 'COLOQUE_SUA_CHAVE' }
-  const asaas = { ok: !!process.env.ASAAS_API_KEY && process.env.ASAAS_API_KEY !== 'seu_asaas_api_key' }
+  const mercadopago = { ok: !!process.env.MP_ACCESS_TOKEN && process.env.MP_ACCESS_TOKEN !== 'SEU_MP_ACCESS_TOKEN' }
   const vapid = { ok: !!(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) }
   const cron = { ok: !!process.env.CRON_SECRET }
 
@@ -118,12 +118,12 @@ export default async function IntegracoesPage() {
       instrucao: 'DATAJUD_API_KEY',
     },
     {
-      nome: 'Asaas (Boletos e Pix)',
+      nome: 'Mercado Pago (Boletos e Pix)',
       icon: CreditCard,
-      status: asaas.ok,
-      descricao: 'Emissão de boletos e Pix',
-      link: 'https://www.asaas.com',
-      instrucao: 'ASAAS_API_KEY (ASAAS_SANDBOX=false em produção)',
+      status: mercadopago.ok,
+      descricao: 'Emissão de boletos e Pix — aceita CPF e CNPJ',
+      link: 'https://www.mercadopago.com.br/developers/pt/docs',
+      instrucao: 'MP_ACCESS_TOKEN (TEST-xxx para sandbox, APP_USR-xxx para produção)',
     },
     {
       nome: 'Web Push (Notificações)',
