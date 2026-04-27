@@ -6,8 +6,8 @@ import { rateLimit } from '@/lib/rate-limit'
 function mascararCpf(cpf: string | null): string | null {
   if (!cpf) return null
   // Mantém apenas os últimos 2 dígitos visíveis: ***.***.***-XX
-  return cpf.replace(/^(\d{3})\.(\d{3})\.(\d{3})-(\d{2})$/, '***.***.***.${4}')
-    .replace(/^(\d{11})$/, (_, s) => `***.***.***.${s.slice(9)}`)
+  return cpf.replace(/^(\d{3})\.(\d{3})\.(\d{3})-(\d{2})$/, '***.***.***-$4')
+    .replace(/^(\d{11})$/, (_, s) => `***.***.***-${s.slice(9)}`)
     || cpf.replace(/\d(?=\d{2})/g, '*')
 }
 

@@ -82,11 +82,13 @@ export async function excluirLancamento(id: string) {
   const { escritorioId, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/sign-in')
 
-  await supabase
+  const { error } = await supabase
     .from('timesheet_lancamentos')
     .delete()
     .eq('id', id)
     .eq('escritorio_id', escritorioId)
+
+  if (error) return { erro: 'Não foi possível excluir o lançamento.' }
 
   revalidatePath('/timesheet')
   return { sucesso: true }

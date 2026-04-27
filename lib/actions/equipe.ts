@@ -135,7 +135,7 @@ export async function aceitarConvitePorToken(token: string) {
   if (!convite) return { erro: 'Convite nao encontrado.' }
   if (convite.status !== 'pendente') return { erro: 'Este convite nao esta mais disponivel.' }
   if (new Date(convite.expira_em) < new Date()) {
-    await supabase.from('convites_equipe').update({ status: 'expirado' }).eq('id', convite.id)
+    void supabase.from('convites_equipe').update({ status: 'expirado' }).eq('id', convite.id)
     return { erro: 'Convite expirado.' }
   }
   if (convite.email_convidado.toLowerCase() !== email) {
@@ -177,7 +177,7 @@ export async function aceitarConvitePorToken(token: string) {
     }
   }
 
-  await supabase
+  const { error: erroAceite } = await supabase
     .from('convites_equipe')
     .update({
       status: 'aceito',
@@ -185,6 +185,11 @@ export async function aceitarConvitePorToken(token: string) {
       aceito_por_clerk_user_id: userId,
     })
     .eq('id', convite.id)
+
+  if (erroAceite) {
+    console.error('Erro ao confirmar aceite do convite:', erroAceite)
+    return { erro: 'Nao foi possivel confirmar o aceite do convite.' }
+  }
 
   revalidatePath('/equipe')
   return { sucesso: true }

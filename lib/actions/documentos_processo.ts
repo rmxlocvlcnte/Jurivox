@@ -45,11 +45,13 @@ export async function excluirDocumentoProcesso(id: string, processoId: string) {
   const { escritorioId, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/sign-in')
 
-  await supabase
+  const { error } = await supabase
     .from('documentos_processo')
     .delete()
     .eq('id', id)
     .eq('escritorio_id', escritorioId)
+
+  if (error) return { erro: 'Não foi possível excluir o documento.' }
 
   revalidatePath(`/processos/${processoId}`)
   redirect(`/processos/${processoId}`)

@@ -7,9 +7,27 @@ import { z } from 'zod'
 import { exigirCargo, CARGOS_OPERACIONAIS } from '@/lib/permissoes'
 import { verificarLimitePlano } from '@/lib/planos-limites'
 
+function validarCPF(cpf: string): boolean {
+  const digits = cpf.replace(/\D/g, '')
+  if (digits.length !== 11) return false
+  if (/^(\d)\1+$/.test(digits)) return false
+  const calc = (len: number) => {
+    let sum = 0
+    for (let i = 0; i < len; i++) sum += parseInt(digits[i]) * (len + 1 - i)
+    const r = (sum * 10) % 11
+    return r >= 10 ? 0 : r
+  }
+  return calc(9) === parseInt(digits[9]) && calc(10) === parseInt(digits[10])
+}
+
+const CpfSchema = z.string().max(20).optional().nullable().refine(
+  (v) => !v || validarCPF(v),
+  { message: 'CPF inválido.' },
+)
+
 const ClienteSchema = z.object({
   nome: z.string().min(2, 'O nome e obrigatorio.').max(200),
-  cpf: z.string().max(20).optional().nullable(),
+  cpf: CpfSchema,
   rg: z.string().max(20).optional().nullable(),
   email: z.string().email('E-mail invalido.').optional().nullable(),
   telefone: z.string().max(30).optional().nullable(),
@@ -104,11 +122,13 @@ export async function excluirCliente(id: string) {
   const perm = exigirCargo(cargo, CARGOS_OPERACIONAIS, 'Sem permissao para excluir clientes.')
   if (perm) return perm
 
-  await supabase
+  const { error } = await supabase
     .from('clientes')
     .delete()
     .eq('id', id)
     .eq('escritorio_id', escritorioId)
+
+  if (error) return { erro: 'Nao foi possivel excluir o cliente.' }
 
   revalidatePath('/clientes')
   redirect('/clientes')
@@ -144,11 +164,13 @@ export async function adicionarObservacao(id: string, formData: FormData) {
 
   const observacoesAtualizadas = `[${dataFormatada}] ${parse.data}\n\n${cliente.observacoes ?? ''}`
 
-  await supabase
+  const { error } = await supabase
     .from('clientes')
     .update({ observacoes: observacoesAtualizadas.trim(), atualizado_em: new Date().toISOString() })
     .eq('id', id)
     .eq('escritorio_id', escritorioId)
+
+  if (error) return { erro: 'Nao foi possivel salvar a observacao.' }
 
   revalidatePath(`/clientes/${id}`)
   redirect(`/clientes/${id}`)

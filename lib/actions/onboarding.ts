@@ -125,7 +125,7 @@ export async function criarEscritorio(
     })
 
   if (erroMembro) {
-    await supabase.from('escritorios').delete().eq('id', escritorio.id)
+    void supabase.from('escritorios').delete().eq('id', escritorio.id)
     console.error('Erro ao criar membro:', erroMembro)
     return { erro: 'Nao foi possivel configurar seu perfil. Tente novamente.' }
   }

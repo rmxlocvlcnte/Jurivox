@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { adicionarObservacao } from '@/lib/actions/clientes'
 import { UploadDocumento } from '@/components/upload-documento'
 import { WhatsAppForm } from '@/components/clientes/WhatsAppForm'
+import { PortalClienteButton } from '@/components/clientes/PortalClienteButton'
 import {
   ChevronLeft, Pencil, Phone, Mail, MapPin,
   User, FileText, FolderOpen, MessageCircle, FilePlus2,
@@ -244,6 +245,9 @@ export default async function ClienteDetalhePage({
               )}
             </div>
           </div>
+
+          {/* Portal do Cliente */}
+          <PortalClienteButton clienteId={id} clienteNome={cliente.nome} />
 
           {/* Documentos Gerados */}
           {(docsGerados?.length ?? 0) > 0 && (

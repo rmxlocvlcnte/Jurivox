@@ -22,34 +22,37 @@ export async function GET(request: NextRequest) {
   }
 
   const url = new URL(request.url)
-  const page   = Math.max(1, parseInt(url.searchParams.get('page')  ?? '1'))
-  const limit  = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') ?? '50')))
-  const offset = (page - 1) * limit
-  const status = url.searchParams.get('status') // pendente | concluido
-  const venceHoje = url.searchParams.get('vence_hoje') === 'true'
-  const atrasados = url.searchParams.get('atrasados') === 'true'
+  const page      = Math.max(1, parseInt(url.searchParams.get('page')  ?? '1'))
+  const limit     = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') ?? '50')))
+  const offset    = (page - 1) * limit
+  // status=pendente | status=concluido  (mapeado para o campo booleano `concluido`)
+  const statusParam = url.searchParams.get('status')
+  const venceHoje   = url.searchParams.get('vence_hoje') === 'true'
+  const atrasados   = url.searchParams.get('atrasados') === 'true'
 
   const supabase = createAdminClient()
   let query = supabase
     .from('prazos')
     .select(
-      'id, descricao, data_inicio, data_vencimento, status, dias_uteis, processo_id, criado_em',
+      'id, descricao, data_inicio, data_vencimento, concluido, concluido_em, dias_uteis, processo_id, criado_em',
       { count: 'exact' }
     )
     .eq('escritorio_id', ctx.escritorioId)
     .order('data_vencimento', { ascending: true })
     .range(offset, offset + limit - 1)
 
-  if (status) {
-    query = query.eq('status', status)
+  if (statusParam === 'pendente') {
+    query = query.eq('concluido', false)
+  } else if (statusParam === 'concluido') {
+    query = query.eq('concluido', true)
   }
 
   if (venceHoje) {
     const hoje = new Date().toISOString().split('T')[0]
-    query = query.eq('data_vencimento', hoje).eq('status', 'pendente')
+    query = query.eq('data_vencimento', hoje).eq('concluido', false)
   } else if (atrasados) {
     const hoje = new Date().toISOString().split('T')[0]
-    query = query.lt('data_vencimento', hoje).eq('status', 'pendente')
+    query = query.lt('data_vencimento', hoje).eq('concluido', false)
   }
 
   const { data, count, error } = await query

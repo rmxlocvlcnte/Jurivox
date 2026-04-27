@@ -87,7 +87,13 @@ export async function registrarRecebimento(id: string, formData: FormData) {
     forma_recebimento: parse.data.forma_recebimento || null,
   }
 
-  await supabase.from('contas_receber').update(dados).eq('id', id).eq('escritorio_id', escritorioId)
+  const { error: errUpdate } = await supabase
+    .from('contas_receber')
+    .update(dados)
+    .eq('id', id)
+    .eq('escritorio_id', escritorioId)
+
+  if (errUpdate) return { erro: 'Não foi possível registrar o recebimento.' }
 
   revalidatePath('/contas-receber')
   redirect('/contas-receber')
@@ -100,11 +106,13 @@ export async function cancelarConta(id: string) {
   const perm = exigirCargo(cargo, CARGOS_FINANCEIRO, 'Sem permissão para cancelar cobranças.')
   if (perm) return perm
 
-  await supabase
+  const { error } = await supabase
     .from('contas_receber')
     .update({ status: 'cancelado' })
     .eq('id', id)
     .eq('escritorio_id', escritorioId)
+
+  if (error) return { erro: 'Não foi possível cancelar a cobrança.' }
 
   revalidatePath('/contas-receber')
   redirect('/contas-receber')
@@ -117,7 +125,13 @@ export async function excluirConta(id: string) {
   const perm = exigirCargo(cargo, CARGOS_FINANCEIRO, 'Sem permissão para excluir cobranças.')
   if (perm) return perm
 
-  await supabase.from('contas_receber').delete().eq('id', id).eq('escritorio_id', escritorioId)
+  const { error } = await supabase
+    .from('contas_receber')
+    .delete()
+    .eq('id', id)
+    .eq('escritorio_id', escritorioId)
+
+  if (error) return { erro: 'Não foi possível excluir a cobrança.' }
 
   revalidatePath('/contas-receber')
   redirect('/contas-receber')

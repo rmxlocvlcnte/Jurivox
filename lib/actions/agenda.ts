@@ -110,11 +110,13 @@ export async function concluirEvento(id: string) {
   const { escritorioId, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/sign-in')
 
-  await supabase
+  const { error } = await supabase
     .from('agenda_eventos')
     .update({ concluido: true, concluido_em: new Date().toISOString() })
     .eq('id', id)
     .eq('escritorio_id', escritorioId)
+
+  if (error) return { erro: 'Não foi possível concluir o evento.' }
 
   revalidatePath('/agenda')
   redirect('/agenda')
@@ -124,11 +126,13 @@ export async function reabrirEvento(id: string) {
   const { escritorioId, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/sign-in')
 
-  await supabase
+  const { error } = await supabase
     .from('agenda_eventos')
     .update({ concluido: false, concluido_em: null })
     .eq('id', id)
     .eq('escritorio_id', escritorioId)
+
+  if (error) return { erro: 'Não foi possível reabrir o evento.' }
 
   revalidatePath('/agenda')
   redirect('/agenda')
@@ -138,7 +142,13 @@ export async function excluirEvento(id: string) {
   const { escritorioId, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/sign-in')
 
-  await supabase.from('agenda_eventos').delete().eq('id', id).eq('escritorio_id', escritorioId)
+  const { error } = await supabase
+    .from('agenda_eventos')
+    .delete()
+    .eq('id', id)
+    .eq('escritorio_id', escritorioId)
+
+  if (error) return { erro: 'Não foi possível excluir o evento.' }
 
   revalidatePath('/agenda')
   redirect('/agenda')
@@ -148,11 +158,13 @@ export async function realocarEvento(id: string, novoResponsavelId: string) {
   const { escritorioId, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/sign-in')
 
-  await supabase
+  const { error } = await supabase
     .from('agenda_eventos')
     .update({ responsavel_id: novoResponsavelId })
     .eq('id', id)
     .eq('escritorio_id', escritorioId)
+
+  if (error) return { erro: 'Não foi possível realocar o evento.' }
 
   revalidatePath('/agenda')
   redirect('/agenda')

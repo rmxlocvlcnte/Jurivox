@@ -144,11 +144,13 @@ export async function reabrirPrazo(id: string) {
   const perm = exigirCargo(cargo, CARGOS_OPERACIONAIS, 'Sem permissão para reabrir prazos.')
   if (perm) return perm
 
-  await supabase
+  const { error } = await supabase
     .from('prazos')
     .update({ concluido: false, concluido_em: null })
     .eq('id', id)
     .eq('escritorio_id', escritorioId)
+
+  if (error) return { erro: 'Não foi possível reabrir o prazo.' }
 
   revalidatePath('/prazos')
 }
@@ -161,11 +163,13 @@ export async function excluirPrazo(id: string) {
   const perm = exigirCargo(cargo, CARGOS_OPERACIONAIS, 'Sem permissão para excluir prazos.')
   if (perm) return perm
 
-  await supabase
+  const { error } = await supabase
     .from('prazos')
     .delete()
     .eq('id', id)
     .eq('escritorio_id', escritorioId)
+
+  if (error) return { erro: 'Não foi possível excluir o prazo.' }
 
   revalidatePath('/prazos')
   redirect('/prazos')

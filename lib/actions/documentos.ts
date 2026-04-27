@@ -19,6 +19,7 @@ export async function salvarMetadadoDocumento(input: SalvarDocumentoInput) {
   const { data: documento, error } = await supabase
     .from('documentos_cliente')
     .insert({
+      escritorio_id: escritorioId,
       cliente_id: input.clienteId,
       tipo: input.tipo,
       nome_arquivo: input.nomeArquivo,
@@ -41,10 +42,16 @@ export async function excluirDocumento(documentoId: string, clienteId: string) {
   const { escritorioId, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/sign-in')
 
-  await supabase
+  const { error } = await supabase
     .from('documentos_cliente')
     .delete()
     .eq('id', documentoId)
+    .eq('escritorio_id', escritorioId)
+
+  if (error) {
+    console.error('Erro ao excluir documento:', error)
+    return { erro: 'Não foi possível excluir o documento.' }
+  }
 
   revalidatePath(`/clientes/${clienteId}`)
 }
