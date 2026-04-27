@@ -12,7 +12,7 @@ import { useState, useEffect } from 'react'
 import { criarPrazo } from '@/lib/actions/prazos'
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 function calcularVencimento(dataInicio: string, quantidadeDias: number, diasUteis: boolean): string {
   if (!dataInicio || isNaN(quantidadeDias) || quantidadeDias <= 0) return ''
@@ -34,7 +34,9 @@ function calcularVencimento(dataInicio: string, quantidadeDias: number, diasUtei
 const inputCls = 'w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent bg-white'
 
 export default function NovoPrazoPage() {
+  const searchParams = useSearchParams()
   const [processos, setProcessos] = useState<{ id: string; numero_cnj: string; clientes: any }[]>([])
+  const [processoSelecionado, setProcessoSelecionado] = useState(searchParams.get('processo_id') ?? '')
   const [dataInicio, setDataInicio] = useState(new Date().toISOString().split('T')[0])
   const [quantidadeDias, setQuantidadeDias] = useState(15)
   const [diasUteis, setDiasUteis] = useState(true)
@@ -97,7 +99,13 @@ export default function NovoPrazoPage() {
             <label className="block text-sm font-medium text-slate-700 mb-1">
               Processo <span className="text-red-500">*</span>
             </label>
-            <select name="processo_id" required className={inputCls}>
+            <select
+              name="processo_id"
+              required
+              value={processoSelecionado}
+              onChange={e => setProcessoSelecionado(e.target.value)}
+              className={inputCls}
+            >
               <option value="">— Selecionar processo —</option>
               {processos.map(p => (
                 <option key={p.id} value={p.id}>

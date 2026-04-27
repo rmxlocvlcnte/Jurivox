@@ -9,6 +9,7 @@ import { Plus } from 'lucide-react'
 import { ListaProcessosFiltrada } from '@/components/lista-processos-filtrada'
 import { ExportButton } from '@/components/export-button'
 import { ImportCSVButton } from '@/components/import-csv-button'
+import { LayoutGrid } from 'lucide-react'
 
 const AREAS: Record<string, string> = {
   civil: 'Cível', criminal: 'Criminal', trabalhista: 'Trabalhista',
@@ -52,6 +53,12 @@ export default async function ProcessosPage() {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          <Link
+            href="/processos/kanban"
+            className="flex items-center gap-2 border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium px-3 py-2 rounded-lg transition-colors text-sm"
+          >
+            <LayoutGrid className="w-4 h-4" /> Kanban
+          </Link>
           {lista.length > 0 && (
             <ExportButton data={lista} columns={EXPORT_COLS} filename="Processos - Jurivox" />
           )}

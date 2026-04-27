@@ -9,7 +9,7 @@
 import { getAuthContext } from '@/lib/auth'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { adicionarMovimentacao } from '@/lib/actions/processos'
+import { adicionarMovimentacao, mudarStatusProcesso } from '@/lib/actions/processos'
 import { adicionarDocumentoProcesso, excluirDocumentoProcesso } from '@/lib/actions/documentos_processo'
 import {
   ChevronLeft, Pencil, Calendar, Clock,
@@ -128,12 +128,41 @@ export default async function ProcessoDetalhePage({
           <span className="text-slate-300">/</span>
           <span className="text-sm text-slate-700 font-mono">{processo.numero_cnj}</span>
         </div>
-        <Link
-          href={`/processos/${id}/editar`}
-          className="flex items-center gap-2 text-sm border border-slate-200 hover:bg-slate-50 px-3 py-1.5 rounded-lg transition-colors"
-        >
-          <Pencil className="w-4 h-4" /> Editar
-        </Link>
+        <div className="flex items-center gap-2 flex-wrap">
+          {processo.status === 'ativo' && (
+            <form action={mudarStatusProcesso}>
+              <input type="hidden" name="processo_id" value={id} />
+              <input type="hidden" name="status" value="arquivado" />
+              <button type="submit" className="text-xs border border-slate-200 hover:bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg transition-colors">
+                Arquivar
+              </button>
+            </form>
+          )}
+          {(processo.status === 'ativo' || processo.status === 'arquivado') && (
+            <form action={mudarStatusProcesso}>
+              <input type="hidden" name="processo_id" value={id} />
+              <input type="hidden" name="status" value="encerrado" />
+              <button type="submit" className="text-xs border border-red-200 hover:bg-red-50 text-red-600 px-3 py-1.5 rounded-lg transition-colors">
+                Encerrar
+              </button>
+            </form>
+          )}
+          {(processo.status === 'arquivado' || processo.status === 'encerrado') && (
+            <form action={mudarStatusProcesso}>
+              <input type="hidden" name="processo_id" value={id} />
+              <input type="hidden" name="status" value="ativo" />
+              <button type="submit" className="text-xs border border-green-200 hover:bg-green-50 text-green-700 px-3 py-1.5 rounded-lg transition-colors">
+                Reativar
+              </button>
+            </form>
+          )}
+          <Link
+            href={`/processos/${id}/editar`}
+            className="flex items-center gap-2 text-sm border border-slate-200 hover:bg-slate-50 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            <Pencil className="w-4 h-4" /> Editar
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -329,7 +358,7 @@ export default async function ProcessoDetalhePage({
               <h3 className="font-semibold text-slate-900 flex items-center gap-2">
                 <Clock className="w-4 h-4 text-slate-400" /> Prazos
               </h3>
-              <Link href="/prazos/novo" className="text-xs text-amber-600 hover:text-amber-700">
+              <Link href={`/prazos/novo?processo_id=${id}`} className="text-xs text-amber-600 hover:text-amber-700">
                 + Novo
               </Link>
             </div>

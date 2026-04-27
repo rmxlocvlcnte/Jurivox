@@ -27,7 +27,7 @@ export default async function ClienteDetalhePage({
   const { escritorioId, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/onboarding')
 
-  const [{ data: cliente }, { data: processos }, { data: documentos }, { data: docsGerados }] = await Promise.all([
+  const [{ data: cliente }, { data: processos }, { data: documentos }, { data: docsGerados }, { data: contas }] = await Promise.all([
     supabase
       .from('clientes')
       .select('*')
@@ -54,9 +54,29 @@ export default async function ClienteDetalhePage({
       .eq('cliente_id', id)
       .order('criado_em', { ascending: false })
       .limit(8),
+
+    supabase
+      .from('contas_receber')
+      .select('valor, status')
+      .eq('cliente_id', id)
+      .eq('escritorio_id', escritorioId),
   ])
 
   if (!cliente) notFound()
+
+  const resumoFinanceiro = (contas ?? []).reduce(
+    (acc, c) => {
+      acc.total += c.valor
+      if (c.status === 'recebido') acc.recebido += c.valor
+      else if (c.status === 'aberto') acc.emAberto += c.valor
+      return acc
+    },
+    { total: 0, recebido: 0, emAberto: 0 },
+  )
+
+  function formatarValor(v: number) {
+    return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  }
 
   async function adicionarObservacaoNeste(formData: FormData) {
     'use server'
@@ -245,6 +265,35 @@ export default async function ClienteDetalhePage({
               )}
             </div>
           </div>
+
+          {/* Resumo Financeiro */}
+          {(contas ?? []).length > 0 && (
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+              <h3 className="font-semibold text-slate-900 mb-3 text-sm">Resumo Financeiro</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Total cobrado</span>
+                  <span className="font-semibold text-slate-900">{formatarValor(resumoFinanceiro.total)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Recebido</span>
+                  <span className="font-semibold text-emerald-700">{formatarValor(resumoFinanceiro.recebido)}</span>
+                </div>
+                <div className="flex justify-between text-sm border-t border-slate-100 pt-2">
+                  <span className="text-slate-500">Em aberto</span>
+                  <span className={`font-semibold ${resumoFinanceiro.emAberto > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
+                    {formatarValor(resumoFinanceiro.emAberto)}
+                  </span>
+                </div>
+              </div>
+              <Link
+                href={`/contas-receber?cliente_id=${id}`}
+                className="block mt-3 text-xs text-amber-600 hover:text-amber-700 text-center"
+              >
+                Ver cobranças →
+              </Link>
+            </div>
+          )}
 
           {/* Portal do Cliente */}
           <PortalClienteButton clienteId={id} clienteNome={cliente.nome} />

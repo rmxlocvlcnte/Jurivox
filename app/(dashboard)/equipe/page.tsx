@@ -1,5 +1,6 @@
 import { getAuthContext } from '@/lib/auth'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import {
   enviarConvite,
   removerMembro,
@@ -15,6 +16,7 @@ import {
   Pencil,
   UserPlus,
   Link as LinkIcon,
+  BarChart2,
 } from 'lucide-react'
 
 const CARGO_LABEL: Record<string, string> = {
@@ -57,9 +59,17 @@ export default async function EquipePage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Equipe</h1>
-        <p className="mt-1 text-sm text-slate-500">Membros, cargos e convites do escritorio</p>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Equipe</h1>
+          <p className="mt-1 text-sm text-slate-500">Membros, cargos e convites do escritorio</p>
+        </div>
+        <Link
+          href="/equipe/relatorio"
+          className="flex items-center gap-2 border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium px-3 py-2 rounded-lg transition-colors text-sm"
+        >
+          <BarChart2 className="w-4 h-4" /> Relatório de Produtividade
+        </Link>
       </div>
 
       {escritorio && (

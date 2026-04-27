@@ -231,3 +231,33 @@ export async function adicionarMovimentacao(processoId: string, formData: FormDa
   revalidatePath(`/processos/${processoId}`)
   redirect(`/processos/${processoId}`)
 }
+
+// ── MUDAR STATUS DO PROCESSO ───────────────────────────────────────────────
+
+export async function mudarStatusProcesso(formData: FormData): Promise<void> {
+  const id = formData.get('processo_id') as string
+  const novoStatus = formData.get('status') as string
+
+  if (!id || !['ativo', 'arquivado', 'encerrado'].includes(novoStatus)) return
+
+  const { escritorioId, cargo, supabase } = await getAuthContext()
+  if (!escritorioId || !supabase) redirect('/sign-in')
+
+  const perm = exigirCargo(cargo, CARGOS_OPERACIONAIS, 'Sem permissao para atualizar processos.')
+  if (perm) return
+
+  const { error } = await supabase
+    .from('processos')
+    .update({ status: novoStatus, atualizado_em: new Date().toISOString() })
+    .eq('id', id)
+    .eq('escritorio_id', escritorioId)
+
+  if (error) {
+    console.error('Erro ao atualizar status:', error)
+    return
+  }
+
+  revalidatePath('/processos')
+  revalidatePath('/processos/kanban')
+  revalidatePath(`/processos/${id}`)
+}
