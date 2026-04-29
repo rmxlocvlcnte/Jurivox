@@ -128,10 +128,15 @@ export async function cancelarBoleto(boletoId: string) {
   try {
     await cancelarCobranca(boleto.asaas_payment_id)
 
-    await supabase
+    const { error: errUpdate } = await supabase
       .from('boletos')
       .update({ status: 'CANCELED', atualizado_em: new Date().toISOString() })
       .eq('id', boletoId)
+
+    if (errUpdate) {
+      console.error('Erro ao atualizar status do boleto:', errUpdate)
+      return { erro: 'Cobrança cancelada no Mercado Pago mas falhou ao atualizar no banco.' }
+    }
 
     revalidatePath('/financeiro/boletos')
     return { sucesso: true }
@@ -171,7 +176,7 @@ export async function sincronizarStatusBoleto(boletoId: string) {
     const urlBoleto = cobranca.transaction_details?.external_resource_url ?? null
     const urlPix = cobranca.point_of_interaction?.transaction_data?.ticket_url ?? null
 
-    await supabase
+    const { error: errSync } = await supabase
       .from('boletos')
       .update({
         status: statusInterno,
@@ -180,6 +185,11 @@ export async function sincronizarStatusBoleto(boletoId: string) {
         atualizado_em: new Date().toISOString(),
       })
       .eq('id', boletoId)
+
+    if (errSync) {
+      console.error('Erro ao sincronizar status do boleto:', errSync)
+      return { erro: 'Status obtido do MP mas falhou ao salvar no banco.' }
+    }
 
     revalidatePath('/financeiro/boletos')
     return { sucesso: true, status: statusInterno }

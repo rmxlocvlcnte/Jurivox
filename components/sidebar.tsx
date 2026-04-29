@@ -25,6 +25,7 @@ import {
   BarChart3,
   Search,
   PenLine,
+  AlertTriangle,
 } from 'lucide-react'
 
 const navItems = [
@@ -32,6 +33,7 @@ const navItems = [
   { href: '/processos',      label: 'Processos',        icon: FolderOpen },
   { href: '/clientes',       label: 'Clientes',         icon: Users },
   { href: '/prazos',         label: 'Prazos',           icon: Calendar },
+  { href: '/vencimentos',    label: 'Vencimentos',      icon: AlertTriangle },
   { href: '/agenda',         label: 'Agenda',           icon: Calendar },
   { href: '/busca',          label: 'Busca',            icon: Search },
   { href: '/contratos',      label: 'Contratos',        icon: FileText },
@@ -51,7 +53,7 @@ const navItems = [
 ]
 
 const GRUPOS = [
-  { label: 'Principal',      items: ['/dashboard', '/processos', '/clientes', '/prazos', '/agenda', '/busca'] },
+  { label: 'Principal',      items: ['/dashboard', '/processos', '/clientes', '/prazos', '/vencimentos', '/agenda', '/busca'] },
   { label: 'Documentos',     items: ['/contratos', '/assinaturas', '/templates', '/documentos'] },
   { label: 'Gestão',         items: ['/timesheet', '/financeiro', '/contas-receber', '/analytics', '/planos', '/equipe', '/seguranca', '/configuracoes'] },
   { label: 'IA e Automação', items: ['/ia', '/monitoramento'] },

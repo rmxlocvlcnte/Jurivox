@@ -32,14 +32,25 @@ export default async function ProcessosPage() {
   const { escritorioId, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/onboarding')
 
-  const { data: processos } = await supabase
-    .from('processos')
-    .select(`
-      id, numero_cnj, tribunal, vara, area_juridica, status, criado_em,
-      clientes(nome)
-    `)
-    .eq('escritorio_id', escritorioId)
-    .order('criado_em', { ascending: false })
+  const [{ data: processos }, { data: membros }] = await Promise.all([
+    supabase
+      .from('processos')
+      .select(`
+        id, numero_cnj, tribunal, vara, area_juridica, status, criado_em,
+        responsavel_id,
+        clientes(nome),
+        membros_escritorio!responsavel_id(id, nome)
+      `)
+      .eq('escritorio_id', escritorioId)
+      .order('criado_em', { ascending: false }),
+
+    supabase
+      .from('membros_escritorio')
+      .select('id, nome')
+      .eq('escritorio_id', escritorioId)
+      .eq('ativo', true)
+      .order('nome'),
+  ])
 
   const lista = processos ?? []
 
@@ -72,7 +83,7 @@ export default async function ProcessosPage() {
         </div>
       </div>
 
-      <ListaProcessosFiltrada processos={lista as any} />
+      <ListaProcessosFiltrada processos={lista as any} membros={membros ?? []} />
     </div>
   )
 }

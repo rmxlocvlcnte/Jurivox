@@ -1,12 +1,20 @@
 {
   "crons": [
     {
+      "path": "/api/cron/monitoramento",
+      "schedule": "0 6 * * 1-5"
+    },
+    {
       "path": "/api/notificacoes/prazos",
       "schedule": "0 7 * * 1-5"
     },
     {
-      "path": "/api/cron/monitoramento",
-      "schedule": "0 6 * * 1-5"
+      "path": "/api/cron/contas-receber",
+      "schedule": "0 8 * * 1-5"
+    },
+    {
+      "path": "/api/cron/trial-expiry",
+      "schedule": "0 9 * * *"
     }
   ],
   "headers": [

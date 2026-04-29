@@ -64,7 +64,7 @@ async function buildChecklist(escritorioId: string, supabase: any, cargo: string
       icone: CreditCard,
       cor: 'text-emerald-500',
       bg: 'bg-emerald-50',
-      feito: assinatura?.status === 'active',
+      feito: ['active', 'trialing'].includes(assinatura?.status ?? ''),
       href: '/planos',
       label: 'Ver planos',
     },

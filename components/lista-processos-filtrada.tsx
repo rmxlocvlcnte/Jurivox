@@ -27,8 +27,12 @@ type Processo = {
   area_juridica: string
   status: string
   criado_em: string
+  responsavel_id?: string | null
   clientes: { nome: string } | null
+  membros_escritorio?: { id: string; nome: string } | null
 }
+
+type Membro = { id: string; nome: string }
 
 function exportarCSV(processos: Processo[]) {
   const cabecalho = ['Número CNJ', 'Tribunal', 'Vara', 'Área', 'Status', 'Cliente', 'Cadastrado em']
@@ -55,10 +59,17 @@ function exportarCSV(processos: Processo[]) {
   URL.revokeObjectURL(url)
 }
 
-export function ListaProcessosFiltrada({ processos }: { processos: Processo[] }) {
+export function ListaProcessosFiltrada({
+  processos,
+  membros = [],
+}: {
+  processos: Processo[]
+  membros?: Membro[]
+}) {
   const [busca, setBusca] = useState('')
   const [filtroStatus, setFiltroStatus] = useState('')
   const [filtroArea, setFiltroArea] = useState('')
+  const [filtroResponsavel, setFiltroResponsavel] = useState('')
 
   const resultado = useMemo(() => {
     return processos.filter(p => {
@@ -71,16 +82,18 @@ export function ListaProcessosFiltrada({ processos }: { processos: Processo[] })
         (p.vara ?? '').toLowerCase().includes(textoLower)
       const matchStatus = !filtroStatus || p.status === filtroStatus
       const matchArea = !filtroArea || p.area_juridica === filtroArea
-      return matchBusca && matchStatus && matchArea
+      const matchResponsavel = !filtroResponsavel || p.responsavel_id === filtroResponsavel
+      return matchBusca && matchStatus && matchArea && matchResponsavel
     })
-  }, [processos, busca, filtroStatus, filtroArea])
+  }, [processos, busca, filtroStatus, filtroArea, filtroResponsavel])
 
-  const temFiltro = busca || filtroStatus || filtroArea
+  const temFiltro = busca || filtroStatus || filtroArea || filtroResponsavel
 
   function limparFiltros() {
     setBusca('')
     setFiltroStatus('')
     setFiltroArea('')
+    setFiltroResponsavel('')
   }
 
   return (
@@ -123,6 +136,20 @@ export function ListaProcessosFiltrada({ processos }: { processos: Processo[] })
               <option key={k} value={k}>{v}</option>
             ))}
           </select>
+
+          {/* Filtro responsável */}
+          {membros.length > 0 && (
+            <select
+              value={filtroResponsavel}
+              onChange={e => setFiltroResponsavel(e.target.value)}
+              className="px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+            >
+              <option value="">Todos os responsáveis</option>
+              {membros.map(m => (
+                <option key={m.id} value={m.id}>{m.nome}</option>
+              ))}
+            </select>
+          )}
 
           {/* Limpar filtros */}
           {temFiltro && (
@@ -189,6 +216,11 @@ export function ListaProcessosFiltrada({ processos }: { processos: Processo[] })
                     <p className="text-sm text-slate-600 mt-0.5">
                       {cliente ?? 'Sem cliente'} · {p.tribunal}{p.vara ? ` — ${p.vara}` : ''}
                     </p>
+                    {(p.membros_escritorio as any)?.nome && (
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        Resp.: {(p.membros_escritorio as any).nome}
+                      </p>
+                    )}
                   </div>
                   <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
                 </Link>

@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { verificarLimite } from '@/lib/limites'
+import { emailBoasVindas } from '@/lib/notificacoes/email'
 
 type OnboardingState = { erro: string | null }
 
@@ -128,6 +129,15 @@ export async function criarEscritorio(
     void supabase.from('escritorios').delete().eq('id', escritorio.id)
     console.error('Erro ao criar membro:', erroMembro)
     return { erro: 'Nao foi possivel configurar seu perfil. Tente novamente.' }
+  }
+
+  // Envia e-mail de boas-vindas (não bloqueia em caso de falha)
+  if (email ?? emailUsuario) {
+    await emailBoasVindas({
+      emailAdvogado: email ?? emailUsuario,
+      nomeAdvogado: nomeUsuario,
+      nomeEscritorio: nome,
+    })
   }
 
   revalidatePath('/bem-vindo')
