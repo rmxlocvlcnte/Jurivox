@@ -11,6 +11,16 @@ function getResend() {
 
 const REMETENTE = process.env.RESEND_FROM_EMAIL ?? 'Jurivox <noreply@jurivox.com.br>'
 
+// Previne injeção de HTML em templates de e-mail (XSS em clientes de e-mail)
+function esc(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
 // -----------------------------------------------
 // E-mail: Nova movimentação no processo
 // -----------------------------------------------
@@ -42,12 +52,16 @@ export async function emailNovaMovimentacao({
   }
 
   const tipoFormatado = tipoLabel[tipo] ?? '📌 Andamento'
+  const sNomeCliente = esc(nomeCliente)
+  const sNomeEscritorio = esc(nomeEscritorio)
+  const sNumeroCnj = esc(numeroCnj)
+  const sDescricao = esc(descricao)
 
   try {
     await resend.emails.send({
       from: REMETENTE,
       to: emailCliente,
-      subject: `Nova movimentação no processo ${numeroCnj}`,
+      subject: `Nova movimentação no processo ${sNumeroCnj}`,
       html: `
         <!DOCTYPE html>
         <html lang="pt-BR">
@@ -61,20 +75,20 @@ export async function emailNovaMovimentacao({
                 <div style="background:linear-gradient(135deg,#f59e0b,#d97706);width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;">⚖️</div>
                 <div>
                   <h1 style="margin:0;color:#fff;font-size:22px;font-weight:700;letter-spacing:-0.5px;">Jurivox</h1>
-                  <p style="margin:0;color:#94a3b8;font-size:12px;">${nomeEscritorio}</p>
+                  <p style="margin:0;color:#94a3b8;font-size:12px;">${sNomeEscritorio}</p>
                 </div>
               </div>
             </div>
 
             <!-- Body -->
             <div style="padding:32px 40px;">
-              <p style="margin:0 0 8px;color:#64748b;font-size:14px;">Olá, <strong style="color:#0f172a;">${nomeCliente}</strong></p>
+              <p style="margin:0 0 8px;color:#64748b;font-size:14px;">Olá, <strong style="color:#0f172a;">${sNomeCliente}</strong></p>
               <h2 style="margin:0 0 24px;color:#0f172a;font-size:20px;font-weight:700;">Nova movimentação no seu processo</h2>
 
               <!-- Processo -->
               <div style="background:#f8fafc;border-radius:12px;padding:20px;margin-bottom:20px;border:1px solid #e2e8f0;">
                 <p style="margin:0 0 4px;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;">Processo</p>
-                <p style="margin:0;font-size:16px;font-weight:700;color:#0f172a;font-family:monospace;">${numeroCnj}</p>
+                <p style="margin:0;font-size:16px;font-weight:700;color:#0f172a;font-family:monospace;">${sNumeroCnj}</p>
               </div>
 
               <!-- Tipo -->
@@ -84,7 +98,7 @@ export async function emailNovaMovimentacao({
 
               <!-- Movimentação -->
               <div style="background:#fff;border-left:4px solid #f59e0b;padding:16px 20px;border-radius:0 12px 12px 0;margin-bottom:28px;">
-                <p style="margin:0;color:#334155;font-size:15px;line-height:1.6;">${descricao}</p>
+                <p style="margin:0;color:#334155;font-size:15px;line-height:1.6;">${sDescricao}</p>
               </div>
 
               <p style="margin:0;color:#64748b;font-size:13px;line-height:1.6;">
@@ -137,11 +151,16 @@ export async function emailNovoPrazo({
   const urgenciaColor = diasRestantes <= 1 ? '#ef4444' : diasRestantes <= 3 ? '#f59e0b' : '#22c55e'
   const urgenciaLabel = diasRestantes <= 0 ? '🚨 VENCIDO' : diasRestantes === 1 ? '⚠️ Vence HOJE' : `⏰ ${diasRestantes} dias restantes`
 
+  const sNomeAdvogado = esc(nomeAdvogado)
+  const sNumeroCnj = esc(numeroCnj)
+  const sDescricao = esc(descricao)
+  const sDataFormatada = esc(dataFormatada)
+
   try {
     await resend.emails.send({
       from: REMETENTE,
       to: emailAdvogado,
-      subject: `⏰ Prazo cadastrado: ${descricao} — ${numeroCnj}`,
+      subject: `⏰ Prazo cadastrado: ${sDescricao} — ${sNumeroCnj}`,
       html: `
         <!DOCTYPE html>
         <html lang="pt-BR">
@@ -155,7 +174,7 @@ export async function emailNovoPrazo({
             </div>
 
             <div style="padding:32px 40px;">
-              <p style="margin:0 0 8px;color:#64748b;font-size:14px;">Olá, <strong style="color:#0f172a;">${nomeAdvogado}</strong></p>
+              <p style="margin:0 0 8px;color:#64748b;font-size:14px;">Olá, <strong style="color:#0f172a;">${sNomeAdvogado}</strong></p>
               <h2 style="margin:0 0 24px;color:#0f172a;font-size:20px;font-weight:700;">Novo prazo cadastrado</h2>
 
               <!-- Badge de urgência -->
@@ -165,11 +184,11 @@ export async function emailNovoPrazo({
 
               <div style="background:#f8fafc;border-radius:12px;padding:20px;margin-bottom:16px;border:1px solid #e2e8f0;">
                 <p style="margin:0 0 4px;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;">Processo</p>
-                <p style="margin:0 0 12px;font-size:16px;font-weight:700;color:#0f172a;font-family:monospace;">${numeroCnj}</p>
+                <p style="margin:0 0 12px;font-size:16px;font-weight:700;color:#0f172a;font-family:monospace;">${sNumeroCnj}</p>
                 <p style="margin:0 0 4px;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;">Prazo</p>
-                <p style="margin:0 0 12px;font-size:15px;color:#334155;">${descricao}</p>
+                <p style="margin:0 0 12px;font-size:15px;color:#334155;">${sDescricao}</p>
                 <p style="margin:0 0 4px;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;">Vencimento</p>
-                <p style="margin:0;font-size:15px;font-weight:600;color:${urgenciaColor};">${dataFormatada}</p>
+                <p style="margin:0;font-size:15px;font-weight:600;color:${urgenciaColor};">${sDataFormatada}</p>
               </div>
             </div>
 
@@ -204,12 +223,14 @@ export async function emailBoasVindas({
   if (!resend || !emailAdvogado) return
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.jurivox.com.br'
+  const sNomeAdvogado = esc(nomeAdvogado)
+  const sNomeEscritorio = esc(nomeEscritorio)
 
   try {
     await resend.emails.send({
       from: REMETENTE,
       to: emailAdvogado,
-      subject: `Bem-vindo ao Jurivox, ${nomeAdvogado}! ⚖️`,
+      subject: `Bem-vindo ao Jurivox, ${sNomeAdvogado}! ⚖️`,
       html: `
         <!DOCTYPE html>
         <html lang="pt-BR">
@@ -226,9 +247,9 @@ export async function emailBoasVindas({
             </div>
 
             <div style="padding:36px 40px;">
-              <p style="margin:0 0 8px;color:#64748b;font-size:14px;">Olá, <strong style="color:#0f172a;">${nomeAdvogado}</strong> 👋</p>
+              <p style="margin:0 0 8px;color:#64748b;font-size:14px;">Olá, <strong style="color:#0f172a;">${sNomeAdvogado}</strong> 👋</p>
               <p style="margin:0 0 24px;color:#334155;font-size:15px;line-height:1.7;">
-                O escritório <strong>${nomeEscritorio}</strong> foi criado com sucesso! Você agora tem acesso a todas as ferramentas que precisa para gerenciar seus processos, prazos e clientes com eficiência.
+                O escritório <strong>${sNomeEscritorio}</strong> foi criado com sucesso! Você agora tem acesso a todas as ferramentas que precisa para gerenciar seus processos, prazos e clientes com eficiência.
               </p>
 
               <div style="background:#fef3c7;border-radius:12px;padding:20px;margin-bottom:24px;border:1px solid #fde68a;">
@@ -288,6 +309,10 @@ export async function emailTrialExpirando({
   const urgencia = diasRestantes <= 1 ? '🚨 ÚLTIMO DIA' : `⏳ ${diasRestantes} dias restantes`
   const corUrgencia = diasRestantes <= 1 ? '#ef4444' : '#f59e0b'
 
+  const sNomeAdvogado = esc(nomeAdvogado)
+  const sNomeEscritorio = esc(nomeEscritorio)
+  const sPlanoAtual = esc(planoAtual)
+
   try {
     await resend.emails.send({
       from: REMETENTE,
@@ -309,11 +334,11 @@ export async function emailTrialExpirando({
                 ${urgencia}
               </div>
 
-              <p style="margin:0 0 8px;color:#64748b;font-size:14px;">Olá, <strong style="color:#0f172a;">${nomeAdvogado}</strong></p>
+              <p style="margin:0 0 8px;color:#64748b;font-size:14px;">Olá, <strong style="color:#0f172a;">${sNomeAdvogado}</strong></p>
               <h2 style="margin:0 0 16px;color:#0f172a;font-size:20px;font-weight:700;">Seu período de trial está acabando</h2>
 
               <p style="margin:0 0 20px;color:#334155;font-size:15px;line-height:1.7;">
-                O trial do escritório <strong>${nomeEscritorio}</strong> no plano <strong>${planoAtual}</strong> expira em
+                O trial do escritório <strong>${sNomeEscritorio}</strong> no plano <strong>${sPlanoAtual}</strong> expira em
                 <strong style="color:${corUrgencia};">${diasRestantes <= 1 ? 'menos de 24 horas' : `${diasRestantes} dias`}</strong>.
                 Para continuar usando o Jurivox sem interrupção, assine agora.
               </p>
@@ -374,6 +399,9 @@ export async function emailPagamentoFalhou({
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.jurivox.com.br'
   const valor = (valorCentavos / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
+  const sNomeAdvogado = esc(nomeAdvogado)
+  const sNomeEscritorio = esc(nomeEscritorio)
+
   try {
     await resend.emails.send({
       from: REMETENTE,
@@ -396,11 +424,11 @@ export async function emailPagamentoFalhou({
                 <p style="margin:6px 0 0;font-size:13px;color:#dc2626;">Tentativa ${tentativa} de 4 · Valor: ${valor}</p>
               </div>
 
-              <p style="margin:0 0 8px;color:#64748b;font-size:14px;">Olá, <strong style="color:#0f172a;">${nomeAdvogado}</strong></p>
+              <p style="margin:0 0 8px;color:#64748b;font-size:14px;">Olá, <strong style="color:#0f172a;">${sNomeAdvogado}</strong></p>
               <h2 style="margin:0 0 16px;color:#0f172a;font-size:20px;font-weight:700;">Não conseguimos processar seu pagamento</h2>
 
               <p style="margin:0 0 20px;color:#334155;font-size:15px;line-height:1.7;">
-                A renovação da assinatura do escritório <strong>${nomeEscritorio}</strong> (${valor}) não foi aprovada.
+                A renovação da assinatura do escritório <strong>${sNomeEscritorio}</strong> (${valor}) não foi aprovada.
                 Atualize sua forma de pagamento para evitar a suspensão do acesso.
               </p>
 
@@ -460,11 +488,14 @@ export async function emailContasVencidas({
   const valorFormatado = valorTotalVencido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
   const total = qtdVencidas + qtdVencendoHoje
 
+  const sNomeAdvogado = esc(nomeAdvogado)
+  const sNomeEscritorio = esc(nomeEscritorio)
+
   try {
     await resend.emails.send({
       from: REMETENTE,
       to: emailAdvogado,
-      subject: `💰 ${total} cobrança${total !== 1 ? 's' : ''} precisando de atenção — ${nomeEscritorio}`,
+      subject: `💰 ${total} cobrança${total !== 1 ? 's' : ''} precisando de atenção — ${sNomeEscritorio}`,
       html: `
         <!DOCTYPE html>
         <html lang="pt-BR">
@@ -477,7 +508,7 @@ export async function emailContasVencidas({
             </div>
 
             <div style="padding:32px 40px;">
-              <p style="margin:0 0 8px;color:#64748b;font-size:14px;">Olá, <strong style="color:#0f172a;">${nomeAdvogado}</strong></p>
+              <p style="margin:0 0 8px;color:#64748b;font-size:14px;">Olá, <strong style="color:#0f172a;">${sNomeAdvogado}</strong></p>
               <h2 style="margin:0 0 20px;color:#0f172a;font-size:20px;font-weight:700;">Cobranças que precisam de atenção</h2>
 
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px;">

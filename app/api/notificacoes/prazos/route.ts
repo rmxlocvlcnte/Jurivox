@@ -17,13 +17,14 @@ import { whatsappLembretePrazo } from '@/lib/notificacoes/whatsapp'
 const DIAS_ANTECEDENCIA = 3 // Avisa prazos que vencem em até 3 dias
 
 export async function POST(req: Request) {
-  // Verifica secret para evitar chamadas não autorizadas
+  // CRON_SECRET é obrigatório — rota protegida em todos os ambientes
   const cronSecret = process.env.CRON_SECRET
-  if (cronSecret) {
-    const authHeader = req.headers.get('authorization')
-    if (authHeader !== `Bearer ${cronSecret}`) {
-      return new Response('Não autorizado', { status: 401 })
-    }
+  if (!cronSecret) {
+    return new Response('Serviço não configurado (CRON_SECRET ausente)', { status: 503 })
+  }
+  const authHeader = req.headers.get('authorization')
+  if (authHeader !== `Bearer ${cronSecret}`) {
+    return new Response('Não autorizado', { status: 401 })
   }
 
   const supabase = createAdminClient()

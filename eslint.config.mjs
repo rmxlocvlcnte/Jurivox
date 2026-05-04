@@ -7,17 +7,33 @@ const eslintConfig = defineConfig([
   ...nextTs,
   {
     rules: {
+      // ── Qualidade de código (SQA — Padrão VPS: violação de padrões) ──────
       "@typescript-eslint/no-explicit-any": "warn",
-      "react-hooks/purity": "warn",
+      "@typescript-eslint/no-unused-vars": ["error", {
+        argsIgnorePattern: "^_",
+        varsIgnorePattern: "^_",
+      }],
+      "@typescript-eslint/no-floating-promises": "error",
+      "prefer-const": "error",
+      "no-var": "error",
+      "no-duplicate-imports": "error",
+      "eqeqeq": ["error", "always", { null: "ignore" }],
+
+      // ── Segurança (SQA — Administração da segurança) ─────────────────────
+      "no-eval": "error",
+      "no-implied-eval": "error",
+      "no-new-func": "error",
+
+      // ── Observabilidade (usar registrarEvento em vez de console.log) ─────
+      "no-console": ["warn", { allow: ["error", "warn"] }],
+
+      // ── Integridade de interface (SQA — ICI: interface inconsistente) ────
       "@next/next/no-html-link-for-pages": "warn",
       "react/no-unescaped-entities": "warn",
-      "prefer-const": "warn",
-      "react-hooks/immutability": "warn",
+      "react-hooks/rules-of-hooks": "error",
     },
   },
-  // Override default ignores of eslint-config-next.
   globalIgnores([
-    // Default ignores of eslint-config-next:
     ".next/**",
     "out/**",
     "build/**",

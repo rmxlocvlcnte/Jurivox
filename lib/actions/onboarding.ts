@@ -9,6 +9,18 @@ import { emailBoasVindas } from '@/lib/notificacoes/email'
 
 type OnboardingState = { erro: string | null }
 
+function validarCNPJ(cnpj: string): boolean {
+  const digits = cnpj.replace(/\D/g, '')
+  if (digits.length !== 14) return false
+  if (/^(\d)\1+$/.test(digits)) return false  // todos dígitos iguais
+  const calc = (d: string, pesos: number[]) =>
+    pesos.reduce((sum, p, i) => sum + parseInt(d[i]) * p, 0)
+  const mod = (n: number) => { const r = n % 11; return r < 2 ? 0 : 11 - r }
+  const v1 = mod(calc(digits, [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]))
+  const v2 = mod(calc(digits, [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]))
+  return v1 === parseInt(digits[12]) && v2 === parseInt(digits[13])
+}
+
 export async function criarEscritorio(
   _prevState: OnboardingState,
   formData: FormData
@@ -93,6 +105,11 @@ export async function criarEscritorio(
 
   if (!nome || !nomeUsuario) {
     return { erro: 'Nome do escritorio e seu nome sao obrigatorios.' }
+  }
+
+  // Valida CNPJ quando fornecido
+  if (cnpj && !validarCNPJ(cnpj)) {
+    return { erro: 'CNPJ inválido. Verifique o número informado.' }
   }
 
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL.includes('SEU_PROJETO')) {

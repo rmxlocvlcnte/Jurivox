@@ -22,18 +22,10 @@ const NOME_RECURSO: Record<Recurso, string> = {
 
 function limitePadrao(planoId: string | null | undefined, recurso: Recurso): number {
   const plano = PLANOS[(planoId ?? 'starter') as keyof typeof PLANOS]
-  if (!plano) return recurso === 'membros' ? 2 : recurso === 'processos' ? 30 : 100
-
-  if (plano.id === 'enterprise') return -1
-  if (plano.id === 'pro') {
-    if (recurso === 'membros') return 10
-    if (recurso === 'processos') return 200
-    return 500
-  }
-
-  if (recurso === 'membros') return 2
-  if (recurso === 'processos') return 30
-  return 100
+  // Fallback conservador quando o plano não é reconhecido
+  if (!plano) return recurso === 'membros' ? 2 : recurso === 'processos' ? 50 : 150
+  // Lê diretamente do objeto PLANOS — única fonte de verdade para limites
+  return plano.limites[recurso]
 }
 
 function nomePlano(planoId: string | null | undefined): string {

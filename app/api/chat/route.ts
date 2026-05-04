@@ -7,7 +7,7 @@ import { rateLimit } from "@/lib/rate-limit";
 export const maxDuration = 60;
 
 const WINDOW_MS = 60_000;
-const MAX_REQUESTS = 15;
+const MAX_REQUESTS = 15; // limite único aplicado tanto em memória quanto no banco
 
 async function checkRateLimit(userId: string): Promise<boolean> {
   const supabase = createAdminClient();
@@ -77,8 +77,8 @@ export async function POST(req: Request) {
     return new Response("Não autorizado", { status: 401 });
   }
 
-  // Rate limit em memória: 20 req/min por usuário (camada rápida, sem I/O)
-  const rl = rateLimit(`chat:${userId}`, { windowMs: 60_000, maxRequests: 20 });
+  // Rate limit em memória: camada rápida (sem I/O) com mesmo limite do banco
+  const rl = rateLimit(`chat:${userId}`, { windowMs: WINDOW_MS, maxRequests: MAX_REQUESTS });
   if (!rl.allowed) {
     return new Response(
       JSON.stringify({ error: "Muitas requisições. Aguarde um momento." }),
