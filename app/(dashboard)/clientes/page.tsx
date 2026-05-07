@@ -9,6 +9,7 @@ import { Plus } from 'lucide-react'
 import { ListaClientesFiltrada } from '@/components/lista-clientes-filtrada'
 import { ExportButton } from '@/components/export-button'
 import { ImportCSVButton } from '@/components/import-csv-button'
+import { decriptarCliente } from '@/lib/cripto'
 
 const EXPORT_COLS = [
   { key: 'nome', label: 'Nome' },
@@ -34,7 +35,8 @@ export default async function ClientesPage() {
     .eq('escritorio_id', escritorioId)
     .order('nome')
 
-  const lista = clientes ?? []
+  // Decripta campos PII antes de enviar para o componente de UI
+  const lista = (clientes ?? []).map(decriptarCliente)
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">

@@ -17,7 +17,7 @@ export default defineConfig({
         'lib/audit.ts',
         'lib/rate-limit.ts',
       ],
-      // Limites mínimos de cobertura (ISO 9001 — eficácia do controle de qualidade)
+      // Limites mínimos de cobertura (ISO 9001:2015 Cláusula 9.1 — avaliação de desempenho)
       thresholds: {
         lines:      70,
         functions:  70,

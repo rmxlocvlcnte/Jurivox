@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { exigirCargo, CARGOS_OPERACIONAIS } from '@/lib/permissoes'
 import { verificarLimitePlano } from '@/lib/planos-limites'
+import { encriptarCliente } from '@/lib/cripto'
 
 function validarCPF(cpf: string): boolean {
   const digits = cpf.replace(/\D/g, '')
@@ -72,11 +73,14 @@ export async function criarCliente(formData: FormData) {
   })
   if (limitePlano) return limitePlano
 
+  // Encripta campos PII antes de persistir no banco
+  const dadosEncriptados = encriptarCliente(parse.data)
+
   const { data: cliente, error } = await supabase
     .from('clientes')
     .insert({
       escritorio_id: escritorioId,
-      ...parse.data,
+      ...dadosEncriptados,   // inclui nome (plaintext) + campos PII encriptados
     })
     .select('id')
     .single()
@@ -102,9 +106,15 @@ export async function atualizarCliente(id: string, formData: FormData) {
     return { erro: parse.error.issues[0]?.message ?? 'Dados invalidos.' }
   }
 
+  // Encripta campos PII antes de atualizar
+  const dadosEncriptados = encriptarCliente(parse.data)
+
   const { error } = await supabase
     .from('clientes')
-    .update({ ...parse.data, atualizado_em: new Date().toISOString() })
+    .update({
+      ...dadosEncriptados,   // inclui nome + campos PII encriptados
+      atualizado_em: new Date().toISOString(),
+    })
     .eq('id', id)
     .eq('escritorio_id', escritorioId)
 
@@ -162,11 +172,17 @@ export async function adicionarObservacao(id: string, formData: FormData) {
     minute: '2-digit',
   })
 
-  const observacoesAtualizadas = `[${dataFormatada}] ${parse.data}\n\n${cliente.observacoes ?? ''}`
+  // Decripta observações existentes, acrescenta nova observação, re-encripta
+  const { decriptarOpcional, encriptarOpcional } = await import('@/lib/cripto')
+  const observacoesAtuais = decriptarOpcional(cliente.observacoes) ?? ''
+  const observacoesAtualizadas = `[${dataFormatada}] ${parse.data}\n\n${observacoesAtuais}`.trim()
 
   const { error } = await supabase
     .from('clientes')
-    .update({ observacoes: observacoesAtualizadas.trim(), atualizado_em: new Date().toISOString() })
+    .update({
+      observacoes: encriptarOpcional(observacoesAtualizadas),
+      atualizado_em: new Date().toISOString(),
+    })
     .eq('id', id)
     .eq('escritorio_id', escritorioId)
 

@@ -13,6 +13,7 @@ import {
   ChevronLeft, Pencil, Phone, Mail, MapPin,
   User, FileText, FolderOpen, MessageCircle, FilePlus2,
 } from 'lucide-react'
+import { decriptarCliente } from '@/lib/cripto'
 
 function formatarData(data: string) {
   return new Date(data).toLocaleDateString('pt-BR')
@@ -27,7 +28,7 @@ export default async function ClienteDetalhePage({
   const { escritorioId, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/onboarding')
 
-  const [{ data: cliente }, { data: processos }, { data: documentos }, { data: docsGerados }, { data: contas }] = await Promise.all([
+  const [{ data: clienteRaw }, { data: processos }, { data: documentos }, { data: docsGerados }, { data: contas }] = await Promise.all([
     supabase
       .from('clientes')
       .select('*')
@@ -62,7 +63,8 @@ export default async function ClienteDetalhePage({
       .eq('escritorio_id', escritorioId),
   ])
 
-  if (!cliente) notFound()
+  if (!clienteRaw) notFound()
+  const cliente = decriptarCliente(clienteRaw)
 
   const resumoFinanceiro = (contas ?? []).reduce(
     (acc, c) => {

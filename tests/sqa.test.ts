@@ -4,7 +4,11 @@ import {
   analisarPareto,
   calcularConfiabilidade,
   obterMetricasQualidade,
+  calcularPontuacaoRisco,
+  classificarNivelRisco,
   type CategoriaErro,
+  type ProbabilidadeRisco,
+  type ImpactoRisco,
 } from '@/lib/sqa'
 
 // ── CATEGORIAS_ERRO (Figura 16.2 — Pressman) ─────────────────────────────
@@ -119,8 +123,6 @@ describe('obterMetricasQualidade', () => {
 
 // ── Fórmulas de confiabilidade (Pressman 16.6.1) — testes matemáticos ────
 describe('Fórmula de disponibilidade MTBF (Pressman 16.6.1)', () => {
-  // Disponibilidade = MTTF / (MTTF + MTTR) × 100%
-
   function calcularDisponibilidade(mttf: number, mttr: number): number {
     const mtbf = mttf + mttr
     return mtbf > 0 ? (mttf / mtbf) * 100 : 100
@@ -168,11 +170,10 @@ describe('Princípio de Pareto (Seção 16.5)', () => {
   }
 
   it('as primeiras categorias são identificadas como vitais (80/20)', () => {
-    // 5 categorias: 50, 30, 10, 5, 5 → total 100, limiar 80
     const resultado = simularPareto([50, 30, 10, 5, 5])
-    expect(resultado[0].vitais).toBe(true)   // acumulado 0 < 80 → vital
-    expect(resultado[1].vitais).toBe(true)   // acumulado 50 < 80 → vital
-    expect(resultado[2].vitais).toBe(false)  // acumulado 80 >= 80 → não vital
+    expect(resultado[0].vitais).toBe(true)
+    expect(resultado[1].vitais).toBe(true)
+    expect(resultado[2].vitais).toBe(false)
   })
 
   it('percentual acumulado sobe monotonicamente', () => {
@@ -185,5 +186,81 @@ describe('Princípio de Pareto (Seção 16.5)', () => {
   it('último item sempre tem 100% acumulado', () => {
     const resultado = simularPareto([60, 40])
     expect(resultado[resultado.length - 1].percentualAcumulado).toBe(100)
+  })
+})
+
+// ── ISO 9001:2015 — Matriz de risco (Cláusula 6.1.2) ─────────────────────
+describe('calcularPontuacaoRisco (ISO 9001:2015 Cláusula 6.1.2)', () => {
+  it('risco máximo: alta probabilidade × alto impacto = 9', () => {
+    expect(calcularPontuacaoRisco('alta', 'alto')).toBe(9)
+  })
+
+  it('risco mínimo: baixa probabilidade × baixo impacto = 1', () => {
+    expect(calcularPontuacaoRisco('baixa', 'baixo')).toBe(1)
+  })
+
+  it('probabilidade média × impacto médio = 4', () => {
+    expect(calcularPontuacaoRisco('media', 'medio')).toBe(4)
+  })
+
+  it('alta × médio = 6', () => {
+    expect(calcularPontuacaoRisco('alta', 'medio')).toBe(6)
+  })
+
+  it('baixa × alto = 3', () => {
+    expect(calcularPontuacaoRisco('baixa', 'alto')).toBe(3)
+  })
+
+  it('pontuação é sempre entre 1 e 9', () => {
+    const probabilidades: ProbabilidadeRisco[] = ['alta', 'media', 'baixa']
+    const impactos: ImpactoRisco[] = ['alto', 'medio', 'baixo']
+    for (const p of probabilidades) {
+      for (const i of impactos) {
+        const score = calcularPontuacaoRisco(p, i)
+        expect(score).toBeGreaterThanOrEqual(1)
+        expect(score).toBeLessThanOrEqual(9)
+      }
+    }
+  })
+})
+
+// ── ISO 9001:2015 — Classificação de nível de risco ──────────────────────
+describe('classificarNivelRisco (ISO 9001:2015)', () => {
+  it('pontuação ≥ 7 → nível alto', () => {
+    expect(classificarNivelRisco(9)).toBe('alto')
+    expect(classificarNivelRisco(7)).toBe('alto')
+  })
+
+  it('pontuação 4-6 → nível médio', () => {
+    expect(classificarNivelRisco(6)).toBe('medio')
+    expect(classificarNivelRisco(4)).toBe('medio')
+  })
+
+  it('pontuação ≤ 3 → nível baixo', () => {
+    expect(classificarNivelRisco(3)).toBe('baixo')
+    expect(classificarNivelRisco(1)).toBe('baixo')
+  })
+
+  it('toda combinação probabilidade × impacto tem nível classificado', () => {
+    const probabilidades: ProbabilidadeRisco[] = ['alta', 'media', 'baixa']
+    const impactos: ImpactoRisco[] = ['alto', 'medio', 'baixo']
+    const niveisValidos = ['alto', 'medio', 'baixo']
+    for (const p of probabilidades) {
+      for (const i of impactos) {
+        const score = calcularPontuacaoRisco(p, i)
+        const nivel = classificarNivelRisco(score)
+        expect(niveisValidos).toContain(nivel)
+      }
+    }
+  })
+
+  it('alta × alto = 9 = nível alto (risco crítico para segurança)', () => {
+    const score = calcularPontuacaoRisco('alta', 'alto')
+    expect(classificarNivelRisco(score)).toBe('alto')
+  })
+
+  it('baixa × baixo = 1 = nível baixo (risco aceitável)', () => {
+    const score = calcularPontuacaoRisco('baixa', 'baixo')
+    expect(classificarNivelRisco(score)).toBe('baixo')
   })
 })

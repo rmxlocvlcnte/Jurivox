@@ -12,6 +12,7 @@ import {
   MP_STATUS_PAGO,
 } from '@/lib/mercadopago'
 import { z } from 'zod'
+import { decriptarOpcional } from '@/lib/cripto'
 
 const BoletoSchema = z.object({
   cliente_id: z.uuid({ error: 'Cliente obrigatorio.' }),
@@ -53,14 +54,18 @@ export async function criarBoleto(formData: FormData) {
     .single()
 
   if (!clienteDB) return { erro: 'Cliente nao encontrado.' }
-  if (!clienteDB.cpf) return { erro: 'O cliente precisa ter CPF/CNPJ cadastrado para emitir cobrança.' }
-  if (!clienteDB.email) return { erro: 'O cliente precisa ter e-mail cadastrado para emitir cobrança via Mercado Pago.' }
+
+  const cpfDecriptado   = decriptarOpcional(clienteDB.cpf)
+  const emailDecriptado = decriptarOpcional(clienteDB.email)
+
+  if (!cpfDecriptado) return { erro: 'O cliente precisa ter CPF/CNPJ cadastrado para emitir cobrança.' }
+  if (!emailDecriptado) return { erro: 'O cliente precisa ter e-mail cadastrado para emitir cobrança via Mercado Pago.' }
 
   try {
     const cobranca = await criarCobranca({
       nomePagador: clienteDB.nome,
-      cpfCnpj: clienteDB.cpf,
-      emailPagador: clienteDB.email,
+      cpfCnpj: cpfDecriptado,
+      emailPagador: emailDecriptado,
       valor: parse.data.valor,
       vencimento: parse.data.data_vencimento,
       descricao: parse.data.descricao,

@@ -3,6 +3,7 @@
 import { getAuthContext } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { whatsappMensagemPersonalizada } from '@/lib/notificacoes/whatsapp'
+import { decriptarOpcional } from '@/lib/cripto'
 
 export async function enviarWhatsAppCliente(clienteId: string, formData: FormData) {
   const { escritorioId, supabase } = await getAuthContext()
@@ -20,7 +21,7 @@ export async function enviarWhatsAppCliente(clienteId: string, formData: FormDat
 
   if (!cliente) return { erro: 'Cliente não encontrado.' }
 
-  const telefone = cliente.whatsapp || cliente.telefone
+  const telefone = decriptarOpcional(cliente.whatsapp) || decriptarOpcional(cliente.telefone)
   if (!telefone) return { erro: 'Cliente não tem número de WhatsApp cadastrado.' }
 
   const zapiConfigurado = !!(

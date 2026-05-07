@@ -1,6 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // lib/sqa.ts — Garantia da Qualidade de Software (SQA)
-// Implementa os critérios do Capítulo 16 (Pressman) + ISO 9001 + Six Sigma
+// Implementa Capítulo 16 (Pressman) + ISO 9001:2015 + IEEE 730 + Six Sigma
+//
+// ISO 9001:2015 — High Level Structure (Annex SL):
+//   Cláusula 4: Contexto da organização (partes interessadas)
+//   Cláusula 6: Planejamento (riscos e oportunidades)
+//   Cláusula 7.1.6: Gestão do conhecimento organizacional
+//   Cláusula 9: Avaliação de desempenho (métricas e auditoria)
+//   Cláusula 10: Melhoria contínua (não conformidades, ações corretivas)
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -28,6 +35,30 @@ export type TipoIncidente     = 'downtime' | 'degraded' | 'erro_critico' | 'lent
 export type ImpactoIncidente  = 'critico' | 'alto' | 'medio' | 'baixo'
 export type TipoRevisao       = 'codigo' | 'arquitetura' | 'requisitos' | 'seguranca' | 'desempenho' | 'banco_dados'
 export type ResultadoRevisao  = 'aprovado' | 'aprovado_com_ressalvas' | 'reprovado'
+
+// ── Tipos ISO 9001:2015 — Gestão de Riscos (Cláusula 6.1.2) ──────────────
+export type ProbabilidadeRisco = 'alta' | 'media' | 'baixa'
+export type ImpactoRisco       = 'alto' | 'medio' | 'baixo'
+export type TipoRisco          = 'tecnico' | 'operacional' | 'seguranca' | 'conformidade' | 'negocio'
+export type TratamentoRisco    = 'aceitar' | 'mitigar' | 'transferir' | 'evitar'
+export type StatusRisco        = 'identificado' | 'em_tratamento' | 'monitorado' | 'fechado'
+export type NivelRisco         = 'alto' | 'medio' | 'baixo'
+export type TipoPartesInteressadas = 'cliente' | 'fornecedor' | 'regulador' | 'interno' | 'parceiro'
+export type TipoConhecimento   = 'processo' | 'decisao' | 'licao_aprendida' | 'padrao' | 'documentacao' | 'arquitetura'
+
+// Matriz de risco ISO 9001:2015: probabilidade × impacto (escala 1–9)
+const PROB_SCORE: Record<ProbabilidadeRisco, number> = { alta: 3, media: 2, baixa: 1 }
+const IMP_SCORE:  Record<ImpactoRisco, number>       = { alto: 3, medio: 2, baixo: 1 }
+
+export function calcularPontuacaoRisco(prob: ProbabilidadeRisco, imp: ImpactoRisco): number {
+  return PROB_SCORE[prob] * IMP_SCORE[imp]
+}
+
+export function classificarNivelRisco(pontuacao: number): NivelRisco {
+  if (pontuacao >= 7) return 'alto'
+  if (pontuacao >= 4) return 'medio'
+  return 'baixo'
+}
 
 // ── Registrar defeito (Seção 16.5 — coleta e análise de erros) ───────────
 export async function registrarDefeitoSQA(params: {
@@ -138,6 +169,129 @@ export async function registrarRevisaoSQA(params: {
   }
 }
 
+// ── Cláusula 6.1.2 — Registrar risco (ISO 9001:2015) ─────────────────────
+export async function registrarRisco(params: {
+  descricao: string
+  tipo: TipoRisco
+  probabilidade: ProbabilidadeRisco
+  impacto: ImpactoRisco
+  tratamento?: TratamentoRisco
+  acoes?: string[]
+  proprietario?: string
+  prazo?: string
+}): Promise<string | null> {
+  try {
+    const supabase = createAdminClient()
+    const { data } = await supabase
+      .from('sqa_riscos')
+      .insert({
+        descricao: params.descricao,
+        tipo: params.tipo,
+        probabilidade: params.probabilidade,
+        impacto: params.impacto,
+        tratamento: params.tratamento ?? 'mitigar',
+        acoes: params.acoes ?? [],
+        proprietario: params.proprietario ?? null,
+        prazo: params.prazo ?? null,
+      })
+      .select('id')
+      .single()
+    return data?.id ?? null
+  } catch {
+    return null
+  }
+}
+
+// ── Cláusula 6.1.2 — Obter matriz de riscos (ISO 9001:2015) ──────────────
+export type EntradaMatrizRisco = {
+  id: string
+  descricao: string
+  tipo: TipoRisco
+  probabilidade: ProbabilidadeRisco
+  impacto: ImpactoRisco
+  pontuacao: number
+  nivel_risco: NivelRisco
+  tratamento: TratamentoRisco
+  status: StatusRisco
+  proprietario: string | null
+  prazo: string | null
+}
+
+export async function obterMatrizRiscos(apenasAbertos = true): Promise<EntradaMatrizRisco[]> {
+  try {
+    const supabase = createAdminClient()
+    let query = supabase
+      .from('sqa_riscos')
+      .select('id,descricao,tipo,probabilidade,impacto,pontuacao,nivel_risco,tratamento,status,proprietario,prazo')
+      .order('pontuacao', { ascending: false })
+
+    if (apenasAbertos) {
+      query = query.not('status', 'eq', 'fechado')
+    }
+
+    const { data } = await query
+    return (data ?? []) as EntradaMatrizRisco[]
+  } catch {
+    return []
+  }
+}
+
+// ── Cláusula 4.2 — Registrar parte interessada (ISO 9001:2015) ───────────
+export async function registrarParteInteressada(params: {
+  nome: string
+  tipo: TipoPartesInteressadas
+  necessidades?: string[]
+  expectativas?: string[]
+  relevancia?: 'alta' | 'media' | 'baixa'
+}): Promise<string | null> {
+  try {
+    const supabase = createAdminClient()
+    const { data } = await supabase
+      .from('sqa_partes_interessadas')
+      .insert({
+        nome: params.nome,
+        tipo: params.tipo,
+        necessidades: params.necessidades ?? [],
+        expectativas: params.expectativas ?? [],
+        relevancia: params.relevancia ?? 'media',
+      })
+      .select('id')
+      .single()
+    return data?.id ?? null
+  } catch {
+    return null
+  }
+}
+
+// ── Cláusula 7.1.6 — Registrar conhecimento organizacional (ISO 9001:2015)
+export async function registrarConhecimento(params: {
+  titulo: string
+  tipo: TipoConhecimento
+  descricao: string
+  responsavel?: string
+  artefatoUrl?: string
+  validoAte?: string
+}): Promise<string | null> {
+  try {
+    const supabase = createAdminClient()
+    const { data } = await supabase
+      .from('sqa_conhecimentos')
+      .insert({
+        titulo: params.titulo,
+        tipo: params.tipo,
+        descricao: params.descricao,
+        responsavel: params.responsavel ?? null,
+        artefato_url: params.artefatoUrl ?? null,
+        valido_ate: params.validoAte ?? null,
+      })
+      .select('id')
+      .single()
+    return data?.id ?? null
+  } catch {
+    return null
+  }
+}
+
 // ── Análise de Pareto (Seção 16.5 — 80% dos defeitos em 20% das causas) ──
 export type EntradaPareto = {
   categoria: CategoriaErro
@@ -163,7 +317,6 @@ export async function analisarPareto(diasRetroativos = 90): Promise<EntradaParet
 
     if (!data || data.length === 0) return []
 
-    // Agrupa por categoria
     const contagens = new Map<string, { total: number; graves: number; moderados: number; secundarios: number }>()
     for (const erro of data) {
       const cat = erro.categoria as string
@@ -178,7 +331,6 @@ export async function analisarPareto(diasRetroativos = 90): Promise<EntradaParet
     const totalGeral = data.length
     const limiar80 = totalGeral * 0.8
 
-    // Ordena por total decrescente (Pareto)
     const ordenado = Array.from(contagens.entries())
       .sort((a, b) => b[1].total - a[1].total)
 
@@ -194,7 +346,7 @@ export async function analisarPareto(diasRetroativos = 90): Promise<EntradaParet
         ...counts,
         percentual: Math.round(percentual * 10) / 10,
         percentualAcumulado: Math.round(percentualAcumulado * 10) / 10,
-        vitais: antesDeAdicionar < limiar80,  // poucas causas vitais que causam 80% dos erros
+        vitais: antesDeAdicionar < limiar80,
       }
     })
   } catch {
@@ -204,8 +356,8 @@ export async function analisarPareto(diasRetroativos = 90): Promise<EntradaParet
 
 // ── Métricas de confiabilidade (Seção 16.6) ──────────────────────────────
 // MTBF = MTTF + MTTR
-// MTTF = Mean Time To Failure (tempo médio até próxima falha)
-// MTTR = Mean Time To Repair (tempo médio de reparo)
+// MTTF = Mean Time To Failure
+// MTTR = Mean Time To Repair
 // Disponibilidade = MTTF / (MTTF + MTTR) × 100%
 
 export type MetricasConfiabilidade = {
@@ -243,21 +395,13 @@ export async function calcularConfiabilidade(diasRetroativos = 30): Promise<Metr
     const totalIncidentes = incidentes.length
     const periodoSegundos = diasRetroativos * 86_400
 
-    // MTTR = média do tempo de reparo dos incidentes resolvidos
     const totalReparo = resolvidos.reduce((sum, i) => sum + (i.duracao_segundos ?? 0), 0)
     const mttrSegundos = resolvidos.length > 0 ? totalReparo / resolvidos.length : 0
 
-    // Tempo total indisponível no período
     const totalIndisponivel = incidentes.reduce((sum, i) => sum + (i.duracao_segundos ?? 0), 0)
-
-    // MTTF = tempo médio entre falhas
     const tempoDisponivel = Math.max(0, periodoSegundos - totalIndisponivel)
     const mttfSegundos = totalIncidentes > 0 ? tempoDisponivel / totalIncidentes : periodoSegundos
-
-    // MTBF = MTTF + MTTR
     const mtbfSegundos = mttfSegundos + mttrSegundos
-
-    // Disponibilidade = MTTF / MTBF × 100%
     const disponibilidade = mtbfSegundos > 0
       ? Math.min(100, (mttfSegundos / mtbfSegundos) * 100)
       : 100
@@ -336,7 +480,7 @@ export async function obterMetricasQualidade(): Promise<MetricasQualidade> {
   }
 }
 
-// ── Consolidar métricas diárias (ISO 9001 — rastreabilidade e registros) ──
+// ── Cláusula 9.1 — Consolidar métricas diárias (ISO 9001:2015) ───────────
 export async function consolidarMetricasDiarias(): Promise<void> {
   try {
     const supabase = createAdminClient()
@@ -347,10 +491,23 @@ export async function consolidarMetricasDiarias(): Promise<void> {
       calcularConfiabilidade(1),
     ])
 
-    const { count: auditCount } = await supabase
-      .from('audit_logs')
-      .select('id', { count: 'exact', head: true })
-      .gte('criado_em', `${hoje}T00:00:00Z`)
+    // Riscos abertos (Cláusula 6.1.2 — ISO 9001:2015)
+    const [
+      { count: auditCount },
+      { data: riscosAbertos },
+    ] = await Promise.all([
+      supabase
+        .from('audit_logs')
+        .select('id', { count: 'exact', head: true })
+        .gte('criado_em', `${hoje}T00:00:00Z`),
+      supabase
+        .from('sqa_riscos')
+        .select('nivel_risco')
+        .not('status', 'eq', 'fechado'),
+    ])
+
+    const totalRiscosAbertos = riscosAbertos?.length ?? 0
+    const riscosAltos = riscosAbertos?.filter(r => r.nivel_risco === 'alto').length ?? 0
 
     await supabase.from('sqa_metricas_diarias').upsert({
       data: hoje,
@@ -359,6 +516,8 @@ export async function consolidarMetricasDiarias(): Promise<void> {
       disponibilidade_percentual: confiabilidade.disponibilidade_percentual,
       acoes_auditadas: auditCount ?? 0,
       incidentes_abertos: confiabilidade.total_incidentes,
+      riscos_abertos: totalRiscosAbertos,
+      riscos_altos: riscosAltos,
       atualizado_em: new Date().toISOString(),
     }, { onConflict: 'data' })
   } catch {

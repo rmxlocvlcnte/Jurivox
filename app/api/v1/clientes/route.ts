@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verificarApiKey } from '@/lib/api-keys'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { rateLimit } from '@/lib/rate-limit'
+import { decriptarCliente } from '@/lib/cripto'
 
 function mascararCpf(cpf: string | null): string | null {
   if (!cpf) return null
@@ -54,11 +55,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ erro: 'Erro interno ao buscar clientes.' }, { status: 500 })
   }
 
-  // Mascara CPF antes de retornar
-  const clientes = (data ?? []).map(c => ({
-    ...c,
-    cpf: mascararCpf(c.cpf),
-  }))
+  // Decripta campos PII e mascara CPF antes de retornar
+  const clientes = (data ?? []).map(c => {
+    const d = decriptarCliente(c)
+    return { ...d, cpf: mascararCpf(d.cpf) }
+  })
 
   return NextResponse.json({
     data: clientes,

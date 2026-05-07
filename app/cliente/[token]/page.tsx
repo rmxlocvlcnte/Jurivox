@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Scale, FileText, Calendar, AlertCircle, ChevronDown, Clock } from 'lucide-react'
+import { decriptarCliente } from '@/lib/cripto'
 
 export default async function PortalClientePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
@@ -79,6 +80,7 @@ export default async function PortalClientePage({ params }: { params: Promise<{ 
   }
 
   if (!cliente) return notFound()
+  const clientePortal = decriptarCliente(cliente)
 
   const { data: escritorio } = await supabase
     .from('escritorios')
@@ -104,7 +106,7 @@ export default async function PortalClientePage({ params }: { params: Promise<{ 
       <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         {/* Boas-vindas */}
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Olá, {cliente.nome}</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Olá, {clientePortal.nome}</h1>
           <p className="text-sm text-slate-500 mt-1">Acompanhe seus processos e prazos abaixo.</p>
         </div>
 

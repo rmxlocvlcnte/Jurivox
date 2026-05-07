@@ -1,6 +1,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // lib/observabilidade.ts — Logging estruturado + integração SQA
 // Implementa coleta de erros/defeitos conforme Seção 16.5 (Pressman)
+// Integra com ISO 9001:2015 Cláusula 10.2 (não-conformidades e ações corretivas)
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { registrarDefeitoSQA, type CategoriaErro, type GravidadeErro } from '@/lib/sqa'

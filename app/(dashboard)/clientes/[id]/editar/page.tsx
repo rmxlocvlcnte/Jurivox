@@ -3,6 +3,7 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { atualizarCliente } from '@/lib/actions/clientes'
+import { decriptarCliente } from '@/lib/cripto'
 
 const inputCls = 'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-transparent focus:ring-2 focus:ring-amber-400'
 const labelCls = 'mb-1 block text-sm font-medium text-slate-700'
@@ -16,14 +17,15 @@ export default async function EditarClientePage({
   const { escritorioId, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/onboarding')
 
-  const { data: cliente } = await supabase
+  const { data: clienteRaw } = await supabase
     .from('clientes')
     .select('*')
     .eq('id', id)
     .eq('escritorio_id', escritorioId)
     .single()
 
-  if (!cliente) notFound()
+  if (!clienteRaw) notFound()
+  const cliente = decriptarCliente(clienteRaw)
 
   async function atualizarEsteCliente(formData: FormData) {
     'use server'

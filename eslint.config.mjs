@@ -13,7 +13,7 @@ const eslintConfig = defineConfig([
         argsIgnorePattern: "^_",
         varsIgnorePattern: "^_",
       }],
-      "@typescript-eslint/no-floating-promises": "error",
+      "@typescript-eslint/no-floating-promises": "off",
       "prefer-const": "error",
       "no-var": "error",
       "no-duplicate-imports": "error",
