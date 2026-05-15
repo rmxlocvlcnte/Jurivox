@@ -1,4 +1,4 @@
-# Jurivox — Documentação Completa & Levantamento de Requisitos
+# 📋 Jurivox — Documentação Completa & Levantamento de Requisitos
 
 > **Plataforma SaaS Multi-Tenant de Gestão Jurídica para Escritórios de Advocacia**
 > Versão: 0.1.0 | Última atualização: Maio 2026 | Licença: MIT
@@ -200,7 +200,7 @@ Formulário (submit) → Server Action ('use server')
 
 ### 4.1 — Gestão de Processos
 
-**Status: Implementado**
+**Status: ✅ Implementado**
 
 Módulo central do sistema. Permite o cadastro completo de processos jurídicos com suporte a múltiplas áreas do direito.
 
@@ -223,7 +223,7 @@ Módulo central do sistema. Permite o cadastro completo de processos jurídicos 
 
 ### 4.2 — Gestão de Clientes
 
-**Status: Implementado**
+**Status: ✅ Implementado**
 
 - CRUD completo de clientes com dados pessoais (nome, CPF, RG, e-mail, telefone, WhatsApp, endereço).
 - Upload de documentos do cliente (RG, CPF, contratos, procurações) via Supabase Storage.
@@ -240,7 +240,7 @@ Módulo central do sistema. Permite o cadastro completo de processos jurídicos 
 
 ### 4.3 — Controle de Prazos
 
-**Status: Implementado**
+**Status: ✅ Implementado**
 
 - CRUD de prazos processuais vinculados a processos.
 - Cálculo automático de data de vencimento em **dias úteis** (exclui sábados, domingos e feriados).
@@ -257,7 +257,7 @@ Módulo central do sistema. Permite o cadastro completo de processos jurídicos 
 
 ### 4.4 — Módulo Financeiro
 
-**Status: Implementado**
+**Status: ✅ Implementado**
 
 - Gestão de honorários por processo (êxito, pro labore, parcelado).
 - Registro de pagamentos recebidos com forma de pagamento (PIX, boleto, TED, dinheiro, cartão, cheque).
@@ -277,7 +277,7 @@ Módulo central do sistema. Permite o cadastro completo de processos jurídicos 
 
 ### 4.5 — Agenda
 
-**Status: Implementado**
+**Status: ✅ Implementado**
 
 - Eventos de agenda: audiências, prazos, providências, reuniões.
 - Vinculação a processo e responsável.
@@ -292,7 +292,7 @@ Módulo central do sistema. Permite o cadastro completo de processos jurídicos 
 
 ### 4.6 — Contratos
 
-**Status: Implementado**
+**Status: ✅ Implementado**
 
 - CRUD de contratos com tipos: fixo, por hora, êxito, misto.
 - Valores configuráveis (fixo, hora, percentual de êxito).
@@ -308,7 +308,7 @@ Módulo central do sistema. Permite o cadastro completo de processos jurídicos 
 
 ### 4.7 — Timesheet (Horas Trabalhadas)
 
-**Status: Implementado**
+**Status: ✅ Implementado**
 
 - Registro de horas trabalhadas por membro do escritório.
 - Vinculação a contrato e/ou processo.
@@ -323,7 +323,7 @@ Módulo central do sistema. Permite o cadastro completo de processos jurídicos 
 
 ### 4.8 — Templates de Documentos
 
-**Status: Implementado**
+**Status: ✅ Implementado**
 
 - CRUD de templates de documentos jurídicos (petições, contratos, notificações).
 - Editor de conteúdo com variáveis de substituição.
@@ -338,7 +338,7 @@ Módulo central do sistema. Permite o cadastro completo de processos jurídicos 
 
 ### 4.9 — Assinaturas Digitais
 
-**Status: Implementado**
+**Status: ✅ Implementado**
 
 - Criação de documentos para assinatura.
 - Fluxo público de assinatura via link hash (sem necessidade de login).
@@ -353,7 +353,7 @@ Módulo central do sistema. Permite o cadastro completo de processos jurídicos 
 
 ### 4.10 — Assistente de IA Jurídica
 
-**Status: Implementado**
+**Status: ✅ Implementado**
 
 - Chat em tempo real com streaming (resposta palavra por palavra).
 - Modelo: DeepSeek R1 (deepseek-reasoner).
@@ -369,7 +369,7 @@ Módulo central do sistema. Permite o cadastro completo de processos jurídicos 
 
 ### 4.11 — Monitoramento DataJud/CNJ
 
-**Status: Implementado**
+**Status: ✅ Implementado**
 
 - Sincronização automática de movimentações processuais via API pública do DataJud.
 - Mapeamento de todos os tribunais brasileiros (TJ, TRT, TRF).
@@ -385,7 +385,7 @@ Módulo central do sistema. Permite o cadastro completo de processos jurídicos 
 
 ### 4.12 — Gestão de Equipe
 
-**Status: Implementado**
+**Status: ✅ Implementado**
 
 - Convite de novos membros ao escritório via e-mail.
 - Cargos: Sócio, Admin, Advogado, Estagiário.
@@ -401,7 +401,7 @@ Módulo central do sistema. Permite o cadastro completo de processos jurídicos 
 
 ### 4.13 — Busca Global
 
-**Status: Implementado**
+**Status: ✅ Implementado**
 
 - Busca full-text (FTS) no PostgreSQL.
 - Pesquisa simultânea em processos, clientes, prazos e movimentações.
@@ -412,7 +412,7 @@ Módulo central do sistema. Permite o cadastro completo de processos jurídicos 
 
 ### 4.14 — Dashboard & Analytics
 
-**Status: Implementado**
+**Status: ✅ Implementado**
 
 - Painel inicial com estatísticas: total de processos, clientes, prazos vencendo, receita.
 - Gráficos interativos com Recharts (processos por área, receita mensal, distribuição de status).
@@ -425,7 +425,7 @@ Módulo central do sistema. Permite o cadastro completo de processos jurídicos 
 
 ### 4.15 — Planos e Billing
 
-**Status: Implementado**
+**Status: ✅ Implementado**
 
 - Integração com Stripe para checkout de assinaturas.
 - Portal do cliente Stripe para gerenciar assinatura.
@@ -443,7 +443,7 @@ Módulo central do sistema. Permite o cadastro completo de processos jurídicos 
 
 ### 4.16 — Configurações e Segurança
 
-**Status: Implementado**
+**Status: ✅ Implementado**
 
 - Configurações do escritório (dados cadastrais).
 - Gestão de integrações (DataJud, Resend, Z-API).
@@ -462,7 +462,7 @@ Módulo central do sistema. Permite o cadastro completo de processos jurídicos 
 
 ### 4.17 — Portal do Cliente
 
-**Status: Implementado**
+**Status: ✅ Implementado**
 
 - Área pública para clientes do escritório acessarem informações de seus processos.
 - Acesso via token exclusivo (sem necessidade de conta no sistema).
@@ -473,7 +473,7 @@ Módulo central do sistema. Permite o cadastro completo de processos jurídicos 
 
 ### 4.18 — Landing Page e Páginas Institucionais
 
-**Status: Implementado**
+**Status: ✅ Implementado**
 
 - Landing page com seções: Hero, Estatísticas, Funcionalidades, Depoimentos, CTA, FAQ.
 - Splash screen animada.
@@ -489,7 +489,7 @@ Módulo central do sistema. Permite o cadastro completo de processos jurídicos 
 
 ### 4.19 — PWA (Progressive Web App)
 
-**Status: Implementado**
+**Status: ✅ Implementado**
 
 - Manifesto web para instalação como app nativo.
 - Service Worker para cache offline.
@@ -502,7 +502,7 @@ Módulo central do sistema. Permite o cadastro completo de processos jurídicos 
 
 ### 4.20 — API Pública v1
 
-**Status: Implementado**
+**Status: ✅ Implementado**
 
 - Endpoints REST para acesso externo via API keys.
 - Endpoints disponíveis: clientes, processos, prazos.
@@ -578,145 +578,145 @@ O banco utiliza migrações SQL versionadas (v1 a v19), executadas sequencialmen
 
 | ID | Requisito | Status |
 |----|-----------|--------|
-| RF01.1 | O sistema deve permitir login via e-mail/senha | Feito |
-| RF01.2 | O sistema deve suportar login via OAuth (Google, GitHub) | Feito (Clerk) |
-| RF01.3 | O sistema deve suportar autenticação de dois fatores (2FA) | Feito |
-| RF01.4 | O sistema deve redirecionar novos usuários para o onboarding | Feito |
-| RF01.5 | O sistema deve implementar controle de permissões por cargo (sócio, admin, advogado, estagiário) | Feito |
-| RF01.6 | O sistema deve permitir gerenciar sessões ativas e dispositivos | Feito |
+| RF01.1 | O sistema deve permitir login via e-mail/senha | ✅ Feito |
+| RF01.2 | O sistema deve suportar login via OAuth (Google, GitHub) | ✅ Feito (Clerk) |
+| RF01.3 | O sistema deve suportar autenticação de dois fatores (2FA) | ✅ Feito |
+| RF01.4 | O sistema deve redirecionar novos usuários para o onboarding | ✅ Feito |
+| RF01.5 | O sistema deve implementar controle de permissões por cargo (sócio, admin, advogado, estagiário) | ✅ Feito |
+| RF01.6 | O sistema deve permitir gerenciar sessões ativas e dispositivos | ✅ Feito |
 
 ### RF02 — Gestão de Escritório (Multi-Tenant)
 
 | ID | Requisito | Status |
 |----|-----------|--------|
-| RF02.1 | O sistema deve permitir a criação de um escritório no primeiro acesso | Feito |
-| RF02.2 | O sistema deve garantir isolamento total de dados entre escritórios | Feito (RLS) |
-| RF02.3 | O sistema deve permitir convidar membros via e-mail | Feito |
-| RF02.4 | O sistema deve permitir definir e alterar cargos dos membros | Feito |
-| RF02.5 | O sistema deve editar os dados cadastrais do escritório (nome, CNPJ, e-mail, telefone) | Feito |
+| RF02.1 | O sistema deve permitir a criação de um escritório no primeiro acesso | ✅ Feito |
+| RF02.2 | O sistema deve garantir isolamento total de dados entre escritórios | ✅ Feito (RLS) |
+| RF02.3 | O sistema deve permitir convidar membros via e-mail | ✅ Feito |
+| RF02.4 | O sistema deve permitir definir e alterar cargos dos membros | ✅ Feito |
+| RF02.5 | O sistema deve editar os dados cadastrais do escritório (nome, CNPJ, e-mail, telefone) | ✅ Feito |
 
 ### RF03 — Gestão de Clientes
 
 | ID | Requisito | Status |
 |----|-----------|--------|
-| RF03.1 | O sistema deve permitir cadastrar clientes com dados pessoais completos | Feito |
-| RF03.2 | O sistema deve permitir editar e excluir clientes | Feito |
-| RF03.3 | O sistema deve permitir upload de documentos do cliente | Feito |
-| RF03.4 | O sistema deve permitir vincular clientes a processos | Feito |
-| RF03.5 | O sistema deve permitir importar clientes via CSV | Feito |
-| RF03.6 | O sistema deve permitir busca e filtros na listagem de clientes | Feito |
+| RF03.1 | O sistema deve permitir cadastrar clientes com dados pessoais completos | ✅ Feito |
+| RF03.2 | O sistema deve permitir editar e excluir clientes | ✅ Feito |
+| RF03.3 | O sistema deve permitir upload de documentos do cliente | ✅ Feito |
+| RF03.4 | O sistema deve permitir vincular clientes a processos | ✅ Feito |
+| RF03.5 | O sistema deve permitir importar clientes via CSV | ✅ Feito |
+| RF03.6 | O sistema deve permitir busca e filtros na listagem de clientes | ✅ Feito |
 
 ### RF04 — Gestão de Processos
 
 | ID | Requisito | Status |
 |----|-----------|--------|
-| RF04.1 | O sistema deve permitir cadastrar processos com número CNJ, tribunal, vara, área jurídica | Feito |
-| RF04.2 | O sistema deve exibir campos específicos por área (Criminal: delegacia; Trabalhista: reclamado; etc.) | Feito |
-| RF04.3 | O sistema deve permitir registrar movimentações na timeline do processo | Feito |
-| RF04.4 | O sistema deve permitir visualizar processos em formato lista e Kanban | Feito |
-| RF04.5 | O sistema deve indicar processos sem movimentação recente | Feito |
-| RF04.6 | O sistema deve permitir vincular documentos a processos | Feito |
-| RF04.7 | O sistema deve permitir análise do processo via IA |  Feito |
-| RF04.8 | O sistema deve permitir editar e arquivar processos | Feito |
+| RF04.1 | O sistema deve permitir cadastrar processos com número CNJ, tribunal, vara, área jurídica | ✅ Feito |
+| RF04.2 | O sistema deve exibir campos específicos por área (Criminal: delegacia; Trabalhista: reclamado; etc.) | ✅ Feito |
+| RF04.3 | O sistema deve permitir registrar movimentações na timeline do processo | ✅ Feito |
+| RF04.4 | O sistema deve permitir visualizar processos em formato lista e Kanban | ✅ Feito |
+| RF04.5 | O sistema deve indicar processos sem movimentação recente | ✅ Feito |
+| RF04.6 | O sistema deve permitir vincular documentos a processos | ✅ Feito |
+| RF04.7 | O sistema deve permitir análise do processo via IA | ✅ Feito |
+| RF04.8 | O sistema deve permitir editar e arquivar processos | ✅ Feito |
 
 ### RF05 — Controle de Prazos
 
 | ID | Requisito | Status |
 |----|-----------|--------|
-| RF05.1 | O sistema deve calcular a data de vencimento em dias úteis ou corridos | Feito |
-| RF05.2 | O sistema deve considerar feriados no cálculo de dias úteis | Feito |
-| RF05.3 | O sistema deve agrupar prazos por urgência (vencido, hoje, 7 dias, futuro, concluído) | Feito |
-| RF05.4 | O sistema deve permitir marcar prazos como concluídos | Feito |
-| RF05.5 | O sistema deve enviar notificações de prazos próximos do vencimento | Feito |
+| RF05.1 | O sistema deve calcular a data de vencimento em dias úteis ou corridos | ✅ Feito |
+| RF05.2 | O sistema deve considerar feriados no cálculo de dias úteis | ✅ Feito |
+| RF05.3 | O sistema deve agrupar prazos por urgência (vencido, hoje, 7 dias, futuro, concluído) | ✅ Feito |
+| RF05.4 | O sistema deve permitir marcar prazos como concluídos | ✅ Feito |
+| RF05.5 | O sistema deve enviar notificações de prazos próximos do vencimento | ✅ Feito |
 
 ### RF06 — Módulo Financeiro
 
 | ID | Requisito | Status |
 |----|-----------|--------|
-| RF06.1 | O sistema deve permitir registrar honorários por processo | Feito |
-| RF06.2 | O sistema deve permitir registrar pagamentos recebidos | Feito |
-| RF06.3 | O sistema deve registrar movimentações financeiras gerais (entradas/saídas) | Feito |
-| RF06.4 | O sistema deve gerenciar contas a receber com status | Feito |
-| RF06.5 | O sistema deve gerar relatórios financeiros em PDF | Feito |
-| RF06.6 | O sistema deve permitir importação de extratos OFX | Feito |
-| RF06.7 | O sistema deve emitir boletos via Mercado Pago | Feito |
-| RF06.8 | O sistema deve gerar QR Code PIX para cobranças | Feito |
+| RF06.1 | O sistema deve permitir registrar honorários por processo | ✅ Feito |
+| RF06.2 | O sistema deve permitir registrar pagamentos recebidos | ✅ Feito |
+| RF06.3 | O sistema deve registrar movimentações financeiras gerais (entradas/saídas) | ✅ Feito |
+| RF06.4 | O sistema deve gerenciar contas a receber com status | ✅ Feito |
+| RF06.5 | O sistema deve gerar relatórios financeiros em PDF | ✅ Feito |
+| RF06.6 | O sistema deve permitir importação de extratos OFX | ✅ Feito |
+| RF06.7 | O sistema deve emitir boletos via Mercado Pago | ✅ Feito |
+| RF06.8 | O sistema deve gerar QR Code PIX para cobranças | ✅ Feito |
 
 ### RF07 — Agenda
 
 | ID | Requisito | Status |
 |----|-----------|--------|
-| RF07.1 | O sistema deve permitir criar eventos (audiências, reuniões, prazos, providências) | Feito |
-| RF07.2 | O sistema deve permitir vincular eventos a processos e responsáveis | Feito |
-| RF07.3 | O sistema deve suportar eventos de dia inteiro | Feito |
+| RF07.1 | O sistema deve permitir criar eventos (audiências, reuniões, prazos, providências) | ✅ Feito |
+| RF07.2 | O sistema deve permitir vincular eventos a processos e responsáveis | ✅ Feito |
+| RF07.3 | O sistema deve suportar eventos de dia inteiro | ✅ Feito |
 
 ### RF08 — Contratos e Timesheet
 
 | ID | Requisito | Status |
 |----|-----------|--------|
-| RF08.1 | O sistema deve permitir criar contratos com diferentes tipos de cobrança | Feito |
-| RF08.2 | O sistema deve permitir registrar horas trabalhadas por membro | Feito |
-| RF08.3 | O sistema deve vincular lançamentos de timesheet a contratos e processos | Feito |
+| RF08.1 | O sistema deve permitir criar contratos com diferentes tipos de cobrança | ✅ Feito |
+| RF08.2 | O sistema deve permitir registrar horas trabalhadas por membro | ✅ Feito |
+| RF08.3 | O sistema deve vincular lançamentos de timesheet a contratos e processos | ✅ Feito |
 
 ### RF09 — Templates de Documentos
 
 | ID | Requisito | Status |
 |----|-----------|--------|
-| RF09.1 | O sistema deve permitir criar templates com variáveis de substituição | Feito |
-| RF09.2 | O sistema deve gerar documentos preenchidos a partir de templates | Feito |
-| RF09.3 | O sistema deve limitar quantidade de templates por plano | Feito |
+| RF09.1 | O sistema deve permitir criar templates com variáveis de substituição | ✅ Feito |
+| RF09.2 | O sistema deve gerar documentos preenchidos a partir de templates | ✅ Feito |
+| RF09.3 | O sistema deve limitar quantidade de templates por plano | ✅ Feito |
 
 ### RF10 — Assinaturas Digitais
 
 | ID | Requisito | Status |
 |----|-----------|--------|
-| RF10.1 | O sistema deve permitir enviar documentos para assinatura via link | Feito |
-| RF10.2 | O signatário deve poder assinar ou recusar sem ter conta no sistema | Feito |
-| RF10.3 | O sistema deve suportar certificados ICP-Brasil | Feito |
+| RF10.1 | O sistema deve permitir enviar documentos para assinatura via link | ✅ Feito |
+| RF10.2 | O signatário deve poder assinar ou recusar sem ter conta no sistema | ✅ Feito |
+| RF10.3 | O sistema deve suportar certificados ICP-Brasil | ✅ Feito |
 
 ### RF11 — Assistente de IA
 
 | ID | Requisito | Status |
 |----|-----------|--------|
-| RF11.1 | O sistema deve oferecer chat com IA jurídica em tempo real | Feito |
-| RF11.2 | A IA deve analisar processos automaticamente ao receber movimentações | Feito |
-| RF11.3 | A IA deve usar linguagem formal e técnica baseada no CPC/2015 | Feito |
+| RF11.1 | O sistema deve oferecer chat com IA jurídica em tempo real | ✅ Feito |
+| RF11.2 | A IA deve analisar processos automaticamente ao receber movimentações | ✅ Feito |
+| RF11.3 | A IA deve usar linguagem formal e técnica baseada no CPC/2015 | ✅ Feito |
 
 ### RF12 — Monitoramento DataJud
 
 | ID | Requisito | Status |
 |----|-----------|--------|
-| RF12.1 | O sistema deve buscar movimentações automaticamente na API DataJud/CNJ | Feito |
-| RF12.2 | O sistema deve mapear todos os tribunais brasileiros | Feito |
-| RF12.3 | O sistema deve criar prazos automaticamente a partir das movimentações | Feito |
+| RF12.1 | O sistema deve buscar movimentações automaticamente na API DataJud/CNJ | ✅ Feito |
+| RF12.2 | O sistema deve mapear todos os tribunais brasileiros | ✅ Feito |
+| RF12.3 | O sistema deve criar prazos automaticamente a partir das movimentações | ✅ Feito |
 
 ### RF13 — Notificações
 
 | ID | Requisito | Status |
 |----|-----------|--------|
-| RF13.1 | O sistema deve enviar e-mails de notificação via Resend | Feito |
-| RF13.2 | O sistema deve enviar notificações via WhatsApp (Z-API) | Código pronto, aguardando credenciais |
-| RF13.3 | O sistema deve suportar push notifications no navegador | Feito |
-| RF13.4 | O sistema deve exibir badge de notificações não lidas | Feito |
+| RF13.1 | O sistema deve enviar e-mails de notificação via Resend | ✅ Feito |
+| RF13.2 | O sistema deve enviar notificações via WhatsApp (Z-API) | ⚠️ Código pronto, aguardando credenciais |
+| RF13.3 | O sistema deve suportar push notifications no navegador | ✅ Feito |
+| RF13.4 | O sistema deve exibir badge de notificações não lidas | ✅ Feito |
 
 ### RF14 — Billing e Planos
 
 | ID | Requisito | Status |
 |----|-----------|--------|
-| RF14.1 | O sistema deve oferecer trial gratuito de 14 dias | Feito |
-| RF14.2 | O sistema deve integrar com Stripe para checkout |  Feito |
-| RF14.3 | O sistema deve aplicar limites por plano (processos, clientes, membros, templates) | Feito |
-| RF14.4 | O sistema deve oferecer portal de gerenciamento da assinatura | Feito |
+| RF14.1 | O sistema deve oferecer trial gratuito de 14 dias | ✅ Feito |
+| RF14.2 | O sistema deve integrar com Stripe para checkout | ✅ Feito |
+| RF14.3 | O sistema deve aplicar limites por plano (processos, clientes, membros, templates) | ✅ Feito |
+| RF14.4 | O sistema deve oferecer portal de gerenciamento da assinatura | ✅ Feito |
 
 ### RF15 — Exportação e Importação
 
 | ID | Requisito | Status |
 |----|-----------|--------|
-| RF15.1 | O sistema deve exportar dados em CSV | Feito |
-| RF15.2 | O sistema deve exportar dados em Excel (XLSX) | Feito |
-| RF15.3 | O sistema deve exportar relatórios em PDF | Feito |
-| RF15.4 | O sistema deve importar dados via CSV | Feito |
-| RF15.5 | O sistema deve permitir backup e restauração completa em JSON | Feito |
+| RF15.1 | O sistema deve exportar dados em CSV | ✅ Feito |
+| RF15.2 | O sistema deve exportar dados em Excel (XLSX) | ✅ Feito |
+| RF15.3 | O sistema deve exportar relatórios em PDF | ✅ Feito |
+| RF15.4 | O sistema deve importar dados via CSV | ✅ Feito |
+| RF15.5 | O sistema deve permitir backup e restauração completa em JSON | ✅ Feito |
 
 ---
 
