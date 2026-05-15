@@ -101,12 +101,20 @@ export default async function ClienteDetalhePage({
           <span className="text-slate-300">/</span>
           <span className="text-sm text-slate-700 font-medium">{cliente.nome}</span>
         </div>
-        <Link
-          href={`/clientes/${id}/editar`}
-          className="flex items-center gap-2 text-sm border border-slate-200 hover:bg-slate-50 px-3 py-1.5 rounded-lg transition-colors"
-        >
-          <Pencil className="w-4 h-4" /> Editar
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/clientes/${id}/relatorio`}
+            className="flex items-center gap-2 text-sm border border-slate-200 hover:bg-slate-50 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            Relatório
+          </Link>
+          <Link
+            href={`/clientes/${id}/editar`}
+            className="flex items-center gap-2 text-sm border border-slate-200 hover:bg-slate-50 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            <Pencil className="w-4 h-4" /> Editar
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">

@@ -40,23 +40,25 @@ const navItems = [
   { href: '/assinaturas',    label: 'Assinaturas',      icon: PenLine },
   { href: '/templates',      label: 'Templates',        icon: FileText },
   { href: '/documentos',     label: 'Documentos',       icon: FilePlus2 },
-  { href: '/timesheet',      label: 'Timesheet',        icon: Clock },
-  { href: '/financeiro',     label: 'Financeiro',       icon: DollarSign },
-  { href: '/contas-receber', label: 'Contas a Receber', icon: CreditCard },
-  { href: '/analytics',      label: 'Analytics',        icon: BarChart3 },
-  { href: '/planos',         label: 'Planos',           icon: CreditCard },
-  { href: '/equipe',         label: 'Equipe',           icon: UserCheck },
-  { href: '/seguranca',      label: 'Segurança',        icon: ShieldCheck },
-  { href: '/configuracoes',  label: 'Configurações',    icon: Settings2 },
-  { href: '/ia',             label: 'Assistente IA',    icon: Bot },
-  { href: '/monitoramento',  label: 'Monitoramento',    icon: Radio },
+  { href: '/timesheet',                     label: 'Timesheet',            icon: Clock },
+  { href: '/financeiro',                    label: 'Financeiro',           icon: DollarSign },
+  { href: '/financeiro/calculadora',        label: 'Calc. Honorários',     icon: Scale },
+  { href: '/contas-receber',               label: 'Contas a Receber',     icon: CreditCard },
+  { href: '/analytics',                    label: 'Analytics',            icon: BarChart3 },
+  { href: '/planos',                       label: 'Planos',               icon: CreditCard },
+  { href: '/equipe',                       label: 'Equipe',               icon: UserCheck },
+  { href: '/seguranca',                    label: 'Segurança',            icon: ShieldCheck },
+  { href: '/configuracoes',               label: 'Configurações',        icon: Settings2 },
+  { href: '/ia',                           label: 'Assistente IA',        icon: Bot },
+  { href: '/ia/notificacao',               label: 'Notificação Extrajud.', icon: FileText },
+  { href: '/monitoramento',               label: 'Monitoramento',        icon: Radio },
 ]
 
 const GRUPOS = [
   { label: 'Principal',      items: ['/dashboard', '/processos', '/clientes', '/prazos', '/vencimentos', '/agenda', '/busca'] },
   { label: 'Documentos',     items: ['/contratos', '/assinaturas', '/templates', '/documentos'] },
-  { label: 'Gestão',         items: ['/timesheet', '/financeiro', '/contas-receber', '/analytics', '/planos', '/equipe', '/seguranca', '/configuracoes'] },
-  { label: 'IA e Automação', items: ['/ia', '/monitoramento'] },
+  { label: 'Gestão',         items: ['/timesheet', '/financeiro', '/financeiro/calculadora', '/contas-receber', '/analytics', '/planos', '/equipe', '/seguranca', '/configuracoes'] },
+  { label: 'IA e Automação', items: ['/ia', '/ia/notificacao', '/monitoramento'] },
 ]
 
 export function Sidebar() {

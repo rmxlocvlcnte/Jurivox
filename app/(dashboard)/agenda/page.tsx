@@ -173,6 +173,13 @@ export default async function AgendaPage() {
           <h1 className="text-xl md:text-2xl font-bold text-slate-900">Agenda</h1>
           <p className="text-slate-500 text-sm mt-1">Audiências, prazos e providências</p>
         </div>
+        <a
+          href="/api/agenda/exportar"
+          download="jurivox-agenda.ics"
+          className="flex items-center gap-2 text-sm border border-slate-200 hover:bg-slate-50 px-3 py-2 rounded-lg text-slate-600 transition-colors shrink-0"
+        >
+          Exportar .ics
+        </a>
       </div>
 
       {/* Resumo */}
