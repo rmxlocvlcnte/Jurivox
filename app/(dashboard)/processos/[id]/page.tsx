@@ -12,10 +12,11 @@ import Link from 'next/link'
 import { adicionarMovimentacao, mudarStatusProcesso } from '@/lib/actions/processos'
 import { adicionarDocumentoProcesso, excluirDocumentoProcesso } from '@/lib/actions/documentos_processo'
 import {
-  ChevronLeft, Pencil, Calendar, Clock,
+  ChevronLeft, Pencil, Clock,
   CheckCircle, Circle, FileText, Scale,
   AlertTriangle, MapPin, Gavel, Paperclip, Trash2, ExternalLink, FilePlus2,
 } from 'lucide-react'
+import { AnaliseRiscoIA } from '@/components/processos/AnaliseRiscoIA'
 
 const LABEL_AREA: Record<string, string> = {
   civil: 'Cível', criminal: 'Criminal', trabalhista: 'Trabalhista',
@@ -156,6 +157,13 @@ export default async function ProcessoDetalhePage({
               </button>
             </form>
           )}
+          <Link
+            href={`/ia?modo=analise-contrato`}
+            className="flex items-center gap-2 text-sm border border-indigo-200 hover:bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            ⚖️ IA Jurídica
+          </Link>
+          <AnaliseRiscoIA processoId={id} />
           <Link
             href={`/processos/${id}/editar`}
             className="flex items-center gap-2 text-sm border border-slate-200 hover:bg-slate-50 px-3 py-1.5 rounded-lg transition-colors"

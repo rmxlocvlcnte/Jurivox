@@ -1,7 +1,7 @@
 import { getAuthContext } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { FileText, Plus, Edit2, Trash2 } from 'lucide-react'
+import { FileText, Plus, Edit2 } from 'lucide-react'
 
 const TIPO_LABELS: Record<string, string> = {
   contrato: 'Contrato', peticao: 'Petição', procuracao: 'Procuração',

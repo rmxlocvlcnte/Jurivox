@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { criarApiKey, revogarApiKey, excluirApiKey } from '@/lib/actions/api-keys'
 import { toast } from 'sonner'
-import { Key, Plus, Copy, Check, X, ShieldOff, Trash2, Loader2, Eye, EyeOff } from 'lucide-react'
+import { Key, Plus, Copy, Check, X, ShieldOff, Trash2, Loader2 } from 'lucide-react'
 
 const ESCOPOS = [
   { value: 'processos:read',  label: 'Processos — Leitura', desc: 'GET /api/v1/processos' },

@@ -6,7 +6,7 @@ import { stripe, PLANOS } from '@/lib/stripe'
 // Cria automaticamente os Produtos e Preços no Stripe para cada plano
 // Só pode ser chamado por sócios/admins
 // Após criar, imprime os Price IDs — adicione-os nas variáveis de ambiente da Vercel
-export async function POST(req: NextRequest) {
+export async function POST(_req: NextRequest) {
   const { cargo, escritorioId } = await getAuthContext()
   if (!escritorioId) return NextResponse.json({ erro: 'Não autenticado.' }, { status: 401 })
 

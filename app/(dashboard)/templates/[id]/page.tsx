@@ -1,7 +1,7 @@
 import { getAuthContext } from '@/lib/auth'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Edit2, FileText, Copy, Trash2 } from 'lucide-react'
+import { ArrowLeft, FileText } from 'lucide-react'
 import { TemplateActions } from '@/components/templates/TemplateActions'
 import { GerarDocumentoForm } from '@/components/templates/GerarDocumentoForm'
 

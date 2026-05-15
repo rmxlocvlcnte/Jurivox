@@ -42,7 +42,7 @@ for (const line of content.split('\n')) {
   const eqIdx = trimmed.indexOf('=')
   if (eqIdx < 0) continue
   const key = trimmed.slice(0, eqIdx).trim()
-  let value = trimmed.slice(eqIdx + 1).trim().replace(/^"|"$/g, '')
+  const value = trimmed.slice(eqIdx + 1).trim().replace(/^"|"$/g, '')
   if (!key || !value || value.includes('COLOQUE_AQUI') || value.includes('SEU_')) continue
   vars.push({ key, value })
 }

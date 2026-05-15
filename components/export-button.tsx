@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Download, FileSpreadsheet, FileText, FileDown, Loader2 } from 'lucide-react'
+import { FileSpreadsheet, FileText, FileDown, Loader2 } from 'lucide-react'
 
 export interface ExportColumn {
   key: string

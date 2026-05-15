@@ -28,12 +28,11 @@ function isPassado(d: string) {
 }
 
 export default async function AgendaPage() {
-  const { escritorioId, membroId, supabase } = await getAuthContext()
+  const { escritorioId, supabase } = await getAuthContext()
   if (!escritorioId || !supabase) redirect('/onboarding')
 
-  const hoje = new Date()
-  const em30Dias = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-  const ha30Dias = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+  const em30Dias = new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
+  const ha30Dias = new Date(new Date().getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()
 
   const [{ data: eventos }, { data: membros }, { data: processos }] = await Promise.all([
     supabase

@@ -164,7 +164,7 @@ export default async function BemVindoPage() {
       {/* Checklist */}
       <div className="space-y-3">
         {checklist.map((item, idx) => {
-          const Icone = item.icone
+          const _Icone = item.icone
           return (
             <div
               key={item.id}

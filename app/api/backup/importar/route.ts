@@ -6,7 +6,7 @@ const CARGOS_BACKUP = ['socio', 'admin']
 
 // Mapeia cada tabela do backup para os campos que podem ser restaurados
 // (exclui campos gerados pelo banco como criado_em se já vierem no backup)
-const TABELAS_RESTAURAVEIS: Record<string, string> = {
+const _TABELAS_RESTAURAVEIS: Record<string, string> = {
   clientes: 'escritorio_id',
   processos: 'escritorio_id',
   prazos: 'escritorio_id',

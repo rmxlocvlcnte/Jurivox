@@ -13,7 +13,7 @@ function formatarData(data: string) {
 }
 
 // Detecta se é busca por número CNJ ou CPF (sem espaços, só dígitos e pontos/hífen)
-function pareceCNJouCPF(termo: string) {
+function _pareceCNJouCPF(termo: string) {
   return /^\d[\d.\-/]*\d$/.test(termo.replace(/\s/g, ''))
 }
 

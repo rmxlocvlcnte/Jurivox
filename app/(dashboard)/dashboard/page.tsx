@@ -56,9 +56,9 @@ export default async function DashboardPage() {
   if (!escritorioId || !supabase) redirect('/onboarding')
 
   const hoje = new Date().toISOString().split('T')[0]
-  const em7Dias = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-  const ha24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-  const ha12Meses = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString()
+  const em7Dias = new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  const ha24h = new Date(new Date().getTime() - 24 * 60 * 60 * 1000).toISOString()
+  const ha12Meses = new Date(new Date().getTime() - 365 * 24 * 60 * 60 * 1000).toISOString()
 
   // Todas as queries em paralelo
   const [
@@ -157,7 +157,7 @@ export default async function DashboardPage() {
       const ultimaMov = movs.reduce((a: any, b: any) =>
         new Date(a.data_movimentacao) > new Date(b.data_movimentacao) ? a : b
       )
-      diasSemMov = Math.floor((Date.now() - new Date(ultimaMov.data_movimentacao).getTime()) / (1000 * 60 * 60 * 24))
+      diasSemMov = Math.floor((new Date().getTime() - new Date(ultimaMov.data_movimentacao).getTime()) / (1000 * 60 * 60 * 24))
     }
     return { ...p, diasSemMov }
   }).filter(p => p.diasSemMov > 30).sort((a, b) => b.diasSemMov - a.diasSemMov).slice(0, 5)
@@ -315,7 +315,7 @@ export default async function DashboardPage() {
               ) : (
                 prazosProximos.map((p) => {
                   const venc = new Date(p.data_vencimento + 'T12:00:00')
-                  const dias = Math.floor((venc.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+                  const dias = Math.floor((venc.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
                   return (
                     <div key={p.id} className="px-5 py-3">
                       <p className="text-sm font-medium text-slate-900">{p.descricao}</p>

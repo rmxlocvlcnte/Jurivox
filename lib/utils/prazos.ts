@@ -45,7 +45,7 @@ export function calcularDataVencimentoComFeriados(
   feriados: Set<string> = new Set(),
 ): string {
   const base = new Date(`${dataInicio}T12:00:00`)
-  let data = new Date(base)
+  const data = new Date(base)
   let contados = 0
 
   while (contados < quantidadeDias) {

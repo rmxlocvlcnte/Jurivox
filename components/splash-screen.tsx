@@ -9,7 +9,7 @@ export function SplashScreen() {
     // Mostra apenas uma vez por sessão
     if (sessionStorage.getItem('jurivox_splash')) return
     sessionStorage.setItem('jurivox_splash', '1')
-    setEstado('visivel')
+    setTimeout(() => setEstado('visivel'), 0)
     const t1 = setTimeout(() => setEstado('saindo'), 3200)
     const t2 = setTimeout(() => setEstado('oculto'), 4000)
     return () => { clearTimeout(t1); clearTimeout(t2) }

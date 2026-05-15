@@ -5,11 +5,10 @@
 import { getAuthContext } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Plus } from 'lucide-react'
+import { Plus, LayoutGrid } from 'lucide-react'
 import { ListaProcessosFiltrada } from '@/components/lista-processos-filtrada'
 import { ExportButton } from '@/components/export-button'
 import { ImportCSVButton } from '@/components/import-csv-button'
-import { LayoutGrid } from 'lucide-react'
 
 const AREAS: Record<string, string> = {
   civil: 'Cível', criminal: 'Criminal', trabalhista: 'Trabalhista',

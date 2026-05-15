@@ -6,7 +6,7 @@ import { concluirPrazo } from '@/lib/actions/prazos'
 
 function diasRestantes(data: string): number {
   const venc = new Date(data + 'T12:00:00')
-  return Math.floor((venc.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+  return Math.floor((venc.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
 }
 
 function formatarData(data: string) {
@@ -38,8 +38,8 @@ export default async function VencimentosPage() {
   if (!escritorioId || !supabase) redirect('/onboarding')
 
   const hoje = new Date().toISOString().split('T')[0]
-  const em7Dias = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-  const em30Dias = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  const em7Dias = new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  const em30Dias = new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
   const [{ data: prazos }, { data: contas }] = await Promise.all([
     supabase

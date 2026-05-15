@@ -27,14 +27,13 @@ const COR_URGENCIA = {
 const LINK_TIPO = {
   prazo_vencido: (id: string) => `/prazos/${id}`,
   prazo_urgente: (id: string) => `/prazos/${id}`,
-  evento_hoje: (id: string) => `/agenda`,
+  evento_hoje: (_id: string) => `/agenda`,
 }
 
 export function NotificacoesBell() {
   const [aberto, setAberto] = useState(false)
   const [total, setTotal] = useState(0)
   const [itens, setItens] = useState<Item[]>([])
-  const [carregando, setCarregando] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
   // Fecha ao clicar fora
@@ -50,22 +49,21 @@ export function NotificacoesBell() {
 
   // Busca dados ao montar e a cada 5 minutos
   useEffect(() => {
-    fetchBadges()
-    const interval = setInterval(fetchBadges, 5 * 60 * 1000)
+    async function load() {
+      try {
+        const res = await fetch('/api/notificacoes/badges')
+        if (!res.ok) return
+        const json = await res.json()
+        setTotal(json.total ?? 0)
+        setItens(json.itens ?? [])
+      } catch {
+        // silencioso — não quebra o header
+      }
+    }
+    load()
+    const interval = setInterval(load, 5 * 60 * 1000)
     return () => clearInterval(interval)
   }, [])
-
-  async function fetchBadges() {
-    try {
-      const res = await fetch('/api/notificacoes/badges')
-      if (!res.ok) return
-      const data = await res.json()
-      setTotal(data.total ?? 0)
-      setItens(data.itens ?? [])
-    } catch {
-      // silencioso — não quebra o header
-    }
-  }
 
   function toggleAberto() {
     setAberto(v => !v)

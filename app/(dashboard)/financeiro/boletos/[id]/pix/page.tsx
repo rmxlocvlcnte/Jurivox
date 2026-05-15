@@ -3,7 +3,7 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { buscarQrCodePix } from '@/lib/mercadopago'
 import {
-  ArrowLeft, QrCode, Copy, AlertTriangle, CheckCircle2,
+  ArrowLeft, QrCode, AlertTriangle, CheckCircle2,
 } from 'lucide-react'
 import { CopyPixButton } from '@/components/financeiro/CopyPixButton'
 

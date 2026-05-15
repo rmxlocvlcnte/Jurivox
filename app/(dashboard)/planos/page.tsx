@@ -22,7 +22,7 @@ export default async function PlanosPage() {
   const stripeAtivo = !!process.env.STRIPE_SECRET_KEY
 
   const diasTrial = assinatura?.status === 'trialing' && assinatura.trial_termina_em
-    ? Math.max(0, Math.ceil((new Date(assinatura.trial_termina_em).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    ? Math.max(0, Math.ceil((new Date(assinatura.trial_termina_em).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))
     : null
 
   const STATUS_LABELS: Record<string, string> = {

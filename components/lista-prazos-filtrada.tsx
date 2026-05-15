@@ -70,8 +70,8 @@ function exportarCSV(prazos: Prazo[]) {
 
 export function ListaPrazosFiltrada({
   prazos,
-  acoesConcluir,
-  acoesReabrir,
+  acoesConcluir: _acoesConcluir,
+  acoesReabrir: _acoesReabrir,
 }: {
   prazos: Prazo[]
   acoesConcluir: React.ReactNode

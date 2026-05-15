@@ -17,7 +17,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 function calcularVencimento(dataInicio: string, quantidadeDias: number, diasUteis: boolean): string {
   if (!dataInicio || isNaN(quantidadeDias) || quantidadeDias <= 0) return ''
   const inicio = new Date(dataInicio + 'T12:00:00')
-  let data = new Date(inicio)
+  const data = new Date(inicio)
   let diasContados = 0
   while (diasContados < quantidadeDias) {
     data.setDate(data.getDate() + 1)
@@ -43,7 +43,7 @@ export default function NovoPrazoPage() {
   const [dataVencimento, setDataVencimento] = useState('')
   const [erro, setErro] = useState<string | null>(null)
   const [carregando, setCarregando] = useState(false)
-  const router = useRouter()
+  const _router = useRouter()
 
   // Atualiza a data de vencimento sempre que os campos mudarem
   useEffect(() => {
