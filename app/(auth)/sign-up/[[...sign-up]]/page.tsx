@@ -1,9 +1,11 @@
+import Link from 'next/link'
 import { SignUp } from '@clerk/nextjs'
 
 // O Clerk renderiza o formulário de cadastro completo automaticamente
 // Inclui: e-mail/senha, confirmação de e-mail, OAuth (Google)
 export default function PaginaCadastro() {
   return (
+    <div className="flex flex-col items-center gap-4">
     <SignUp
       appearance={{
         elements: {
@@ -17,5 +19,14 @@ export default function PaginaCadastro() {
         },
       }}
     />
+    <p className="max-w-sm text-center text-xs text-slate-500">
+      Ao criar sua conta, você concorda com os{' '}
+      <Link href="/termos-de-uso" className="text-amber-600 hover:underline">Termos de Uso</Link>
+      , a{' '}
+      <Link href="/privacidade" className="text-amber-600 hover:underline">Política de Privacidade</Link>
+      {' '}e o{' '}
+      <Link href="/dpa" className="text-amber-600 hover:underline">DPA</Link>.
+    </p>
+    </div>
   )
 }

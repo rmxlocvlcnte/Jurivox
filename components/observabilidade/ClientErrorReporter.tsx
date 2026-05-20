@@ -1,6 +1,11 @@
 'use client'
 
 import { useEffect } from 'react'
+import {
+  COOKIE_CONSENT_KEY,
+  hasAnalyticsConsent,
+  parseCookieConsent,
+} from '@/lib/cookie-consent'
 
 const habilitado = process.env.NEXT_PUBLIC_ENABLE_CLIENT_ERROR_REPORTING !== 'false'
 
@@ -13,42 +18,67 @@ function enviar(payload: { mensagem: string; stack?: string; origem: string; url
   })
 }
 
+function consentimentoPermiteRelatorio(): boolean {
+  if (typeof window === 'undefined') return false
+  const raw = localStorage.getItem(COOKIE_CONSENT_KEY)
+  const consent = parseCookieConsent(raw)
+  if (!consent) return false
+  return hasAnalyticsConsent(consent)
+}
+
 export function ClientErrorReporter() {
   useEffect(() => {
     if (!habilitado) return
 
-    const onError = (event: ErrorEvent) => {
-      enviar({
-        mensagem: event.message || 'Erro de runtime no cliente',
-        stack: event.error?.stack,
-        origem: 'window.error',
-        url: window.location.href,
-      })
+    const registrar = () => {
+      if (!consentimentoPermiteRelatorio()) return
+
+      const onError = (event: ErrorEvent) => {
+        enviar({
+          mensagem: event.message || 'Erro de runtime no cliente',
+          stack: event.error?.stack,
+          origem: 'window.error',
+          url: window.location.href,
+        })
+      }
+
+      const onUnhandledRejection = (event: PromiseRejectionEvent) => {
+        const reason =
+          typeof event.reason === 'string'
+            ? event.reason
+            : event.reason?.message || 'Promise rejection sem mensagem'
+
+        enviar({
+          mensagem: reason,
+          stack: event.reason?.stack,
+          origem: 'window.unhandledrejection',
+          url: window.location.href,
+        })
+      }
+
+      window.addEventListener('error', onError)
+      window.addEventListener('unhandledrejection', onUnhandledRejection)
+
+      return () => {
+        window.removeEventListener('error', onError)
+        window.removeEventListener('unhandledrejection', onUnhandledRejection)
+      }
     }
 
-    const onUnhandledRejection = (event: PromiseRejectionEvent) => {
-      const reason =
-        typeof event.reason === 'string'
-          ? event.reason
-          : event.reason?.message || 'Promise rejection sem mensagem'
+    let cleanup = registrar()
 
-      enviar({
-        mensagem: reason,
-        stack: event.reason?.stack,
-        origem: 'window.unhandledrejection',
-        url: window.location.href,
-      })
+    const onConsentChange = () => {
+      cleanup?.()
+      cleanup = registrar()
     }
 
-    window.addEventListener('error', onError)
-    window.addEventListener('unhandledrejection', onUnhandledRejection)
+    window.addEventListener('jurivox-cookie-consent', onConsentChange)
 
     return () => {
-      window.removeEventListener('error', onError)
-      window.removeEventListener('unhandledrejection', onUnhandledRejection)
+      cleanup?.()
+      window.removeEventListener('jurivox-cookie-consent', onConsentChange)
     }
   }, [])
 
   return null
 }
-

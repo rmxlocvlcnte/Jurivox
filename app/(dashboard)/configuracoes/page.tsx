@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Shield, FileText, Download, Settings2, Building2, Plug, Key } from 'lucide-react'
 import { buscarEscritorio } from '@/lib/actions/escritorio'
 import { EscritorioForm } from '@/components/configuracoes/EscritorioForm'
+import { ExclusaoDadosForm } from '@/components/configuracoes/ExclusaoDadosForm'
 
 export default async function ConfiguracoesPage() {
   const { escritorioId, cargo } = await getAuthContext()
@@ -67,6 +68,12 @@ export default async function ConfiguracoesPage() {
             <Download className="h-4 w-4 rotate-180" />
             Restaurar backup
           </Link>
+        </div>
+        <div className="mt-6 border-t border-slate-100 pt-5">
+          <h3 className="text-sm font-medium text-slate-900">Exclusão de dados e conta</h3>
+          <div className="mt-3">
+            <ExclusaoDadosForm podeExcluirEscritorio={cargo === 'socio'} />
+          </div>
         </div>
       </section>
 

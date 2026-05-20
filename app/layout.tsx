@@ -4,6 +4,7 @@ import { ClerkProvider } from '@clerk/nextjs'
 import { ptBR } from '@clerk/localizations'
 import { Toaster } from '@/components/ui/sonner'
 import { ClientErrorReporter } from '@/components/observabilidade/ClientErrorReporter'
+import { CookieConsentBanner } from '@/components/legal/CookieConsentBanner'
 import { PwaRegister } from '@/components/PwaRegister'
 import './globals.css'
 
@@ -47,6 +48,7 @@ export default function RootLayout({
         </head>
         <body className={`${geist.variable} font-sans antialiased`}>
           {children}
+          <CookieConsentBanner />
           <PwaRegister />
           <ClientErrorReporter />
           <Toaster />
